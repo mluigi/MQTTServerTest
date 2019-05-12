@@ -1,5 +1,6 @@
 import TemperatureReads.deviceId
 import TemperatureReads.value
+import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
@@ -22,7 +23,7 @@ val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())
 
 object Devices : Table() {
     val id = integer("id").autoIncrement().primaryKey()
-    val name = varchar("name", 50)
+    val name = varchar("name", 50).uniqueIndex()
 }
 
 object TemperatureReads : Table() {
@@ -34,6 +35,7 @@ object TemperatureReads : Table() {
 
 fun main() {
     transaction(db) {
+        SchemaUtils.drop(Devices, TemperatureReads)
         SchemaUtils.create(Devices, TemperatureReads)
         dbLog.info("Created Devices and TemperatureRead tables.")
     }
@@ -60,35 +62,49 @@ fun main() {
     }
 
     mqttServer.endpointHandler { endpoint ->
-        //mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] request to connect, clean session = ${endpoint.isCleanSession}")
+        mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] request to connect, clean session = ${endpoint.isCleanSession}")
         var devId = 0
         transaction(db) {
-            devId = Devices.insert {
+            devId = Devices.insertIgnore {
                 it[name] = endpoint.clientIdentifier()
             } get Devices.id
         }
-        /*if (endpoint.auth() != null) {
+        if (endpoint.auth() != null) {
             mqttLog.info("[username = ${endpoint.auth().username}, password = ${endpoint.auth().password}]")
         }
-        if (endpoint.will() != null) {
-            mqttLog.info("[will topic = ${endpoint.will().willTopic} msg = ${endpoint.will().willMessage} QoS = ${endpoint.will().willQos} isRetain = ${endpoint.will().isWillRetain}]")
-        }
+//        if (endpoint.will() != null) {
+//            mqttLog.info("[will topic = ${endpoint.will().willTopic} msg = ${endpoint.will().willMessage} QoS = ${endpoint.will().willQos} isRetain = ${endpoint.will().isWillRetain}]")
+//        }
 
         mqttLog.info("[keep alive timeout = ${endpoint.keepAliveTimeSeconds()}]")
-        */
+
         endpoint.publishHandler {
+            if (it.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
+                endpoint.publishAcknowledge(it.messageId())
+            } else if (it.qosLevel() == MqttQoS.EXACTLY_ONCE) {
+                endpoint.publishReceived(it.messageId())
+            }
             synchronized(tempCache) {
                 //mqttLog.info("temp: ${it.payload()}")
                 tempCache.add(Pair(devId, it.payload().toString()))
             }
+        }.publishReleaseHandler {
+            endpoint.publishComplete(it)
         }
 
-        /*endpoint.disconnectHandler {
+        endpoint.disconnectHandler {
             mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnected.")
-        }*/
+        }
+
+        endpoint.exceptionHandler {
+            mqttLog.info("${it.cause}: ${it.message}")
+        }
+
 
         // accept connection from the remote client
-        endpoint.accept(false)
+        endpoint.accept(true)
+    }.exceptionHandler {
+        mqttLog.info("${it.cause}: ${it.message}")
     }.listen { ar ->
         if (ar.succeeded()) {
             mqttLog.info("MQTT server is listening on port ${ar.result().actualPort()}")
