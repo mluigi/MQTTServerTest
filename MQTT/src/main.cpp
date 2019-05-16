@@ -13,41 +13,41 @@ extern "C"
 #define MQTT_HOST IPAddress(192, 168, 1, 58)
 #define MQTT_PORT 1883
 
-#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP 5
+// #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
+// #define TIME_TO_SLEEP 5
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
-void print_wakeup_reason()
-{
-  esp_sleep_wakeup_cause_t wakeup_reason;
+// void print_wakeup_reason()
+// {
+//   esp_sleep_wakeup_cause_t wakeup_reason;
 
-  wakeup_reason = esp_sleep_get_wakeup_cause();
+//   wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  switch (wakeup_reason)
-  {
-  case ESP_SLEEP_WAKEUP_EXT0:
-    Serial.println("Wakeup caused by external signal using RTC_IO");
-    break;
-  case ESP_SLEEP_WAKEUP_EXT1:
-    Serial.println("Wakeup caused by external signal using RTC_CNTL");
-    break;
-  case ESP_SLEEP_WAKEUP_TIMER:
-    Serial.println("Wakeup caused by timer");
-    break;
-  case ESP_SLEEP_WAKEUP_TOUCHPAD:
-    Serial.println("Wakeup caused by touchpad");
-    break;
-  case ESP_SLEEP_WAKEUP_ULP:
-    Serial.println("Wakeup caused by ULP program");
-    break;
-  default:
-    Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
-    break;
-  }
-}
+//   switch (wakeup_reason)
+//   {
+//   case ESP_SLEEP_WAKEUP_EXT0:
+//     Serial.println("Wakeup caused by external signal using RTC_IO");
+//     break;
+//   case ESP_SLEEP_WAKEUP_EXT1:
+//     Serial.println("Wakeup caused by external signal using RTC_CNTL");
+//     break;
+//   case ESP_SLEEP_WAKEUP_TIMER:
+//     Serial.println("Wakeup caused by timer");
+//     break;
+//   case ESP_SLEEP_WAKEUP_TOUCHPAD:
+//     Serial.println("Wakeup caused by touchpad");
+//     break;
+//   case ESP_SLEEP_WAKEUP_ULP:
+//     Serial.println("Wakeup caused by ULP program");
+//     break;
+//   default:
+//     Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
+//     break;
+//   }
+// }
 
 void connectToWifi()
 {
@@ -76,7 +76,7 @@ void WiFiEvent(WiFiEvent_t event)
     break;
   case SYSTEM_EVENT_STA_DISCONNECTED:
     Serial.println("WiFi lost connection");
-    xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+    //xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
     xTimerStart(wifiReconnectTimer, 0);
     break;
   }
@@ -90,18 +90,18 @@ void onMqttConnect(bool sessionPresent)
   //uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
   //Serial.print("Subscribing at QoS 2, packetId: ");
   //Serial.println(packetIdSub);
-  mqttClient.publish("temperature", 0, true, "55.5");
-  Serial.println("Publishing at QoS 0");
-  uint16_t packetIdPub1 = mqttClient.publish("temperature", 1, true, "55.5");
-  Serial.print("Publishing at QoS 1, packetId: ");
-  Serial.println(packetIdPub1);
-  uint16_t packetIdPub2 = mqttClient.publish("temperature", 2, true, "55.5");
-  Serial.print("Publishing at QoS 2, packetId: ");
-  Serial.println(packetIdPub2);
-  if (WiFi.isConnected())
-  {
-    xTimerStart(mqttReconnectTimer, 0);
-  }
+  // mqttClient.publish("temperature", 0, true, "55.5");
+  // Serial.println("Publishing at QoS 0");
+  // uint16_t packetIdPub1 = mqttClient.publish("temperature", 1, true, "55.5");
+  // Serial.print("Publishing at QoS 1, packetId: ");
+  // Serial.println(packetIdPub1);
+  // uint16_t packetIdPub2 = mqttClient.publish("temperature", 2, true, "55.5");
+  // Serial.print("Publishing at QoS 2, packetId: ");
+  // Serial.println(packetIdPub2);
+  // if (WiFi.isConnected())
+  // {
+  //   xTimerStart(mqttReconnectTimer, 0);
+  // }
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -165,7 +165,7 @@ void disconnect(){
   mqttClient.disconnect();
 }
 
-RTC_DATA_ATTR int bootCount = 0;
+// RTC_DATA_ATTR int bootCount = 0;
 
 void setup()
 {
@@ -173,16 +173,16 @@ void setup()
   Serial.println();
   Serial.println();
   delay(1000);
-  ++bootCount;
-  Serial.println("Boot number: " + String(bootCount));
-  print_wakeup_reason();
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
+  // ++bootCount;
+  // Serial.println("Boot number: " + String(bootCount));
+  // print_wakeup_reason();
+  // esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(disconnect));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
   WiFi.onEvent(WiFiEvent);
-
+  
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
   mqttClient.onSubscribe(onMqttSubscribe);
@@ -196,4 +196,15 @@ void setup()
 
 void loop()
 {
+
+  //Calcolo lato server media latenza tra messaggi (-10 ms se si usa il delay)
+  for (int i = 0; i < 500; ++i)
+  {
+    char buf[50];
+    mqttClient.publish("temperature",0,false,ltoa(millis(),buf,10));
+    delay(10);
+  }
+  
+  //Calcolo latenza risposta dal server per publish ripetuti
+  
 }
