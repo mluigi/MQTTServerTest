@@ -10,7 +10,7 @@ extern "C"
 #define WIFI_SSID "FASTWEB-tsT92f"
 #define WIFI_PASSWORD "meloncello10"
 
-#define MQTT_HOST IPAddress(192, 168, 1, 51)
+#define MQTT_HOST IPAddress(192, 168, 1, 58)
 #define MQTT_PORT 1883
 
 #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */

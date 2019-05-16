@@ -92,6 +92,7 @@ fun main() {
             endpoint.publishComplete(it)
         }
 
+        endpoint.publishAcknowledgeHandler {  }
         endpoint.disconnectHandler {
             mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnected.")
         }
