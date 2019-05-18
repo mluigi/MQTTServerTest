@@ -44,12 +44,12 @@ fun main() {
     val pool = Executors.newFixedThreadPool(20)
 
     val time = measureTimeMillis {
-        for (i in 1..500) {
+        for (i in 1..2) {
             pool.execute(runnable)
             Thread.sleep(Random.nextLong(50))
         }
 
-        while (pool.awaitTermination(15, TimeUnit.SECONDS)){}
+        while (pool.awaitTermination(1, TimeUnit.SECONDS)){}
     }
 
     dbLog.info("Took $time ms with $nExceptions exceptions.")

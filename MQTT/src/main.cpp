@@ -10,7 +10,7 @@ extern "C"
 #define WIFI_SSID "FASTWEB-tsT92f"
 #define WIFI_PASSWORD "meloncello10"
 
-#define MQTT_HOST IPAddress(192, 168, 1, 58)
+#define MQTT_HOST IPAddress(192, 168, 1, 51)
 #define MQTT_PORT 1883
 
 // #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
@@ -112,11 +112,10 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
     delay(1000);
   }
   Serial.println("Disconnected from MQTT.");
-  
-  Serial.println("Going to sleep now");
-  Serial.flush();
-  esp_deep_sleep_start();
-  Serial.println("This will never be printed");
+  if (WiFi.isConnected())
+  {
+    xTimerStart(mqttReconnectTimer, 0);
+  }
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos)
@@ -161,10 +160,6 @@ void onMqttPublish(uint16_t packetId)
   Serial.println(packetId);
 }
 
-void disconnect(){
-  mqttClient.disconnect();
-}
-
 // RTC_DATA_ATTR int bootCount = 0;
 
 void setup()
@@ -178,11 +173,11 @@ void setup()
   // print_wakeup_reason();
   // esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
-  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(disconnect));
+  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
   WiFi.onEvent(WiFiEvent);
-  
+
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
   mqttClient.onSubscribe(onMqttSubscribe);
@@ -197,14 +192,17 @@ void setup()
 void loop()
 {
 
-  //Calcolo lato server media latenza tra messaggi (-10 ms se si usa il delay)
+  long start = millis();
+  mqttClient.publish("test", 0, false, "start");
+
   for (int i = 0; i < 500; ++i)
   {
-    char buf[50];
-    mqttClient.publish("temperature",0,false,ltoa(millis(),buf,10));
-    delay(10);
+    mqttClient.publish("test", 0, false, "pack");
   }
-  
-  //Calcolo latenza risposta dal server per publish ripetuti
-  
+
+  mqttClient.publish("test", 0, false, "end");
+  long end = millis();
+  Serial.printf("took %ld s\n", (end - start) / 1000);
+  //mqttClient.disconnect();
+  delay(10000);
 }

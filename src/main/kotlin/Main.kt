@@ -43,7 +43,7 @@ fun main() {
     val tempCache = ArrayList<Pair<Int, String>>()
 
 
-    Timer().scheduleAtFixedRate(2000, 2000) {
+    Timer().scheduleAtFixedRate(2000, 1000) {
         synchronized(tempCache) {
             if (tempCache.size > 0) {
                 transaction(db) {
@@ -53,9 +53,7 @@ fun main() {
                     }
 
                     dbLog.info("Added ${tempCache.size} reads")
-
                     tempCache.clear()
-
                 }
             }
         }
@@ -78,21 +76,68 @@ fun main() {
 
         mqttLog.info("[keep alive timeout = ${endpoint.keepAliveTimeSeconds()}]")
 
+        var startTime = 0L
+        var packets = 0
+        val times = mutableListOf<Long>()
+        var prev = 0L
+        var started = false
         endpoint.publishHandler {
             if (it.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
                 endpoint.publishAcknowledge(it.messageId())
             } else if (it.qosLevel() == MqttQoS.EXACTLY_ONCE) {
                 endpoint.publishReceived(it.messageId())
             }
-            synchronized(tempCache) {
-                //mqttLog.info("temp: ${it.payload()}")
-                tempCache.add(Pair(devId, it.payload().toString()))
+
+            when (it.topicName()) {
+                "temperature" -> {
+                    synchronized(tempCache) {
+                        //mqttLog.info("temp: ${it.payload()}")
+                        tempCache.add(Pair(devId, it.payload().toString()))
+                    }
+                }
+                else -> {
+                    when (it.payload().toString()) {
+                        "start" -> {
+                            if (!started) {
+                                startTime = System.nanoTime()
+                                started = true
+                            }
+                        }
+                        "end" -> {
+
+                            if (started) {
+                                val endTime = System.nanoTime()
+
+                                mqttLog.info("Took ${(endTime - startTime) / 1_000_000}ms to receive $packets from ${endpoint.clientIdentifier()}")
+                                mqttLog.info(
+                                    "Time between packages: min ${times.toLongArray().min()!!}ns " +
+                                            "max ${times.toLongArray().max()!! / 1_000_000}ms " +
+                                            "avg ${times.toLongArray().average() / 1_000_000}ms"
+                                )
+                                startTime = 0
+                                prev = 0
+                                packets = 0
+                                times.clear()
+                                started = false
+                            }
+                        }
+                        else -> {
+                            if (started) {
+                                val curr = System.nanoTime()
+                                times.add(curr - if (prev == 0L) startTime else prev)
+                                prev = curr
+                                ++packets
+                            }
+                        }
+                    }
+                }
             }
         }.publishReleaseHandler {
             endpoint.publishComplete(it)
         }
 
-        endpoint.publishAcknowledgeHandler {  }
+        endpoint.publishAcknowledgeHandler { }
+
         endpoint.disconnectHandler {
             mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnected.")
         }
@@ -100,7 +145,6 @@ fun main() {
         endpoint.exceptionHandler {
             mqttLog.info("${it.cause}: ${it.message}")
         }
-
 
         // accept connection from the remote client
         endpoint.accept(true)
