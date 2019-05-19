@@ -137,27 +137,15 @@ void onMqttUnsubscribe(uint16_t packetId)
 void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
   Serial.println("Publish received.");
-  Serial.print("  topic: ");
-  Serial.println(topic);
-  Serial.print("  qos: ");
-  Serial.println(properties.qos);
-  Serial.print("  dup: ");
-  Serial.println(properties.dup);
-  Serial.print("  retain: ");
-  Serial.println(properties.retain);
-  Serial.print("  len: ");
-  Serial.println(len);
-  Serial.print("  index: ");
-  Serial.println(index);
-  Serial.print("  total: ");
-  Serial.println(total);
 }
-
+int i = 1;
+long sendTime;
+long returnTime;
 void onMqttPublish(uint16_t packetId)
 {
-  Serial.println("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
+  returnTime = millis();
+  Serial.printf("%d. Return time = %ld ms\n", i, (returnTime - sendTime));
+  ++i;
 }
 
 // RTC_DATA_ATTR int bootCount = 0;
@@ -187,22 +175,38 @@ void setup()
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
 
   connectToWifi();
+  mqttClient.subscribe("return", 1);
 }
 
 void loop()
 {
-
-  long start = millis();
-  mqttClient.publish("test", 0, false, "start");
-
-  for (int i = 0; i < 500; ++i)
+  if (mqttClient.connected())
   {
-    mqttClient.publish("test", 0, false, "pack");
-  }
+    long start = millis();
+    mqttClient.publish("test", 0, false, "start");
 
-  mqttClient.publish("test", 0, false, "end");
-  long end = millis();
-  Serial.printf("took %ld s\n", (end - start) / 1000);
-  //mqttClient.disconnect();
-  delay(10000);
+    Serial.println("Starting send time test");
+    for (int i = 0; i < 500; ++i)
+    {
+      mqttClient.publish("test", 0, false, "pack");
+    }
+    mqttClient.publish("test", 0, false, "end");
+    long end = millis();
+    Serial.printf("Took %ld ms\n", (end - start));
+
+    start = millis();
+    Serial.println("Starting return time test");
+    mqttClient.publish("test", 1, false, "start");
+    for (int i = 0; i < 500; ++i)
+    {
+      sendTime = millis();
+      mqttClient.publish("test", 1, false, "pack");
+    }
+    mqttClient.publish("test", 1, false, "end");
+    end = millis();
+    Serial.printf("Took %ld s\n", (end - start) / 1000);
+    //mqttClient.disconnect();
+    delay(15000);
+    i = 1;
+  }
 }

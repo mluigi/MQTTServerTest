@@ -2,6 +2,7 @@ import TemperatureReads.deviceId
 import TemperatureReads.value
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
