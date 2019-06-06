@@ -16,8 +16,8 @@ val dbLog: Logger = LoggerFactory.getLogger("DB")
 val mqttLog: Logger = LoggerFactory.getLogger("MQTT")
 
 val db = Database.connect(
-    "jdbc:mysql://localhost:3306/test", driver = "com.mysql.jdbc.Driver",
-    user = "test", password = ""
+    "jdbc:mariadb://localhost:3306/test", driver = "org.mariadb.jdbc.Driver",
+    user = "root", password = ""
 )
 
 val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())
