@@ -2,7 +2,6 @@ import TemperatureReads.deviceId
 import TemperatureReads.value
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
-import io.vertx.core.buffer.Buffer
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -60,6 +59,13 @@ fun main() {
         }
     }
 
+    val lock = Any()
+
+    val packetsAMO = ArrayList<Pair<Int, Long>>()
+    val packetsALO = ArrayList<Pair<Int, Long>>()
+
+    var pubackSent = 0
+
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] request to connect, clean session = ${endpoint.isCleanSession}")
         var devId = 0
@@ -77,78 +83,42 @@ fun main() {
 
         mqttLog.info("[keep alive timeout = ${endpoint.keepAliveTimeSeconds()}]")
 
-        var startTime = 0L
-        var packets = 0
-        val times = mutableListOf<Long>()
         var prev = 0L
-        var started = false
         endpoint.publishHandler {
-            if (it.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
-                endpoint.publishAcknowledge(it.messageId())
-            } else if (it.qosLevel() == MqttQoS.EXACTLY_ONCE) {
-                endpoint.publishReceived(it.messageId())
-            }
-
-            when (it.topicName()) {
-                "temperature" -> {
-                    synchronized(tempCache) {
-                        //mqttLog.info("temp: ${it.payload()}")
-                        tempCache.add(Pair(devId, it.payload().toString()))
+            when (it.qosLevel()) {
+                MqttQoS.AT_MOST_ONCE -> {
+                    val curr = System.nanoTime()
+                    synchronized(lock) {
+                        if (prev != 0L) {
+                            packetsAMO.add(Pair(it.messageId(), curr - prev))
+                        }
                     }
+                    prev = curr
                 }
-                else -> {
-                    when (it.payload().toString()) {
-                        "start" -> {
-                            if (!started) {
-                                startTime = System.nanoTime()
-                                started = true
-                            }
-                        }
-                        "end" -> {
-
-                            if (started) {
-                                val endTime = System.nanoTime()
-
-                                mqttLog.info("Took ${(endTime - startTime) / 1_000_000}ms to receive $packets from ${endpoint.clientIdentifier()}")
-                                mqttLog.info(
-                                    "Time between packages: min ${times.toLongArray().min()!!}ns " +
-                                            "max ${times.toLongArray().max()!! / 1_000_000}ms " +
-                                            "avg ${times.toLongArray().average() / 1_000_000}ms"
-                                )
-                                startTime = 0
-                                prev = 0
-                                packets = 0
-                                times.clear()
-                                started = false
-                            }
-                        }
-                        else -> {
-                            if (started) {
-                                val curr = System.nanoTime()
-                                times.add(curr - if (prev == 0L) startTime else prev)
-                                prev = curr
-                                ++packets
-                            }
+                MqttQoS.AT_LEAST_ONCE -> {
+                    endpoint.publishAcknowledge(it.messageId())
+                    ++pubackSent
+                    val curr = System.nanoTime()
+                    synchronized(lock) {
+                        if (prev != 0L) {
+                            packetsALO.add(Pair(it.messageId(), curr - prev))
                         }
                     }
+                    prev = curr
+                }
+                MqttQoS.EXACTLY_ONCE -> endpoint.publishReceived(it.messageId())
+                else -> {
+
                 }
             }
         }.publishReleaseHandler {
             endpoint.publishComplete(it)
-        }
-
-        endpoint.publishAcknowledgeHandler { }
-
-        endpoint.disconnectHandler {
+        }.publishAcknowledgeHandler {
+        }.disconnectHandler {
             mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnected.")
-        }
-
-        endpoint.exceptionHandler {
+        }.exceptionHandler {
             mqttLog.info("${it.cause}: ${it.message}")
-        }
-
-        // accept connection from the remote client
-        endpoint.accept(true)
+        }.accept(true)
     }.exceptionHandler {
         mqttLog.info("${it.cause}: ${it.message}")
     }.listen { ar ->
@@ -157,6 +127,23 @@ fun main() {
         } else {
             mqttLog.error("Error on starting the server")
             ar.cause().printStackTrace()
+        }
+    }
+
+    Timer().scheduleAtFixedRate(0, 1000) {
+        synchronized(lock) {
+            if (packetsALO.size > 0 || packetsAMO.size > 0 || pubackSent > 0) {
+                mqttLog.info("Received ${packetsAMO.size + packetsALO.size} packets")
+                mqttLog.info("${packetsAMO.size} QoS 1, ${packetsALO.size} QoS 2, PUBACKs sent $pubackSent")
+                val bothTimes = packetsALO.plus(packetsAMO).map { it.second }.toLongArray()
+                mqttLog.info("Time between packages: min ${bothTimes.min()!!}ns " +
+                        "max ${bothTimes.max()!! / 1_000_000}ms " +
+                        "avg ${bothTimes.average() / 1_000_000}ms")
+
+                packetsALO.clear()
+                packetsAMO.clear()
+                pubackSent = 0
+            }
         }
     }
 }

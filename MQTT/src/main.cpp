@@ -7,8 +7,6 @@ extern "C"
 #include "freertos/timers.h"
 }
 
-#include 
-
 #define WIFI_SSID "FASTWEB-tsT92f"
 #define WIFI_PASSWORD "meloncello10"
 
@@ -89,21 +87,6 @@ void onMqttConnect(bool sessionPresent)
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  //uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
-  //Serial.print("Subscribing at QoS 2, packetId: ");
-  //Serial.println(packetIdSub);
-  // mqttClient.publish("temperature", 0, true, "55.5");
-  // Serial.println("Publishing at QoS 0");
-  // uint16_t packetIdPub1 = mqttClient.publish("temperature", 1, true, "55.5");
-  // Serial.print("Publishing at QoS 1, packetId: ");
-  // Serial.println(packetIdPub1);
-  // uint16_t packetIdPub2 = mqttClient.publish("temperature", 2, true, "55.5");
-  // Serial.print("Publishing at QoS 2, packetId: ");
-  // Serial.println(packetIdPub2);
-  // if (WiFi.isConnected())
-  // {
-  //   xTimerStart(mqttReconnectTimer, 0);
-  // }
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -146,11 +129,9 @@ long returnTime;
 void onMqttPublish(uint16_t packetId)
 {
   returnTime = millis();
-  Serial.printf("%d. Return time = %ld ms\n", i, (returnTime - sendTime));
+  //Serial.printf("%d. Return time = %ld ms\n", i, (returnTime - sendTime));
   ++i;
 }
-
-// RTC_DATA_ATTR int bootCount = 0;
 
 void setup()
 {
@@ -158,11 +139,6 @@ void setup()
   Serial.println();
   Serial.println();
   delay(1000);
-  // ++bootCount;
-  // Serial.println("Boot number: " + String(bootCount));
-  // print_wakeup_reason();
-  // esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
@@ -185,9 +161,8 @@ void loop()
   if (mqttClient.connected())
   {
     long start = millis();
-    mqttClient.publish("test", 0, false, "start");
 
-    Serial.println("Starting send time test");
+    Serial.println("Sending packets with qos 0");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");
@@ -195,20 +170,17 @@ void loop()
     mqttClient.publish("test", 0, false, "end");
     long end = millis();
     Serial.printf("Took %ld ms\n", (end - start));
-
+    delay(1000);
     start = millis();
-    Serial.println("Starting return time test");
-    mqttClient.publish("test", 1, false, "start");
+    Serial.println("Sending packets with qos 1");
     for (int i = 0; i < 500; ++i)
     {
-      sendTime = millis();
       mqttClient.publish("test", 1, false, "pack");
     }
-    mqttClient.publish("test", 1, false, "end");
     end = millis();
     Serial.printf("Took %ld s\n", (end - start) / 1000);
     //mqttClient.disconnect();
-    delay(15000);
+    delay(1000);
     i = 1;
   }
 }
