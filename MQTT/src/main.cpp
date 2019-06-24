@@ -10,44 +10,12 @@ extern "C"
 #define WIFI_SSID "FASTWEB-tsT92f"
 #define WIFI_PASSWORD "meloncello10"
 
-#define MQTT_HOST IPAddress(192, 168, 1, 51)
+#define MQTT_HOST IPAddress(93, 42, 77, 156)
 #define MQTT_PORT 1883
-
-// #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
-// #define TIME_TO_SLEEP 5
 
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
-
-// void print_wakeup_reason()
-// {
-//   esp_sleep_wakeup_cause_t wakeup_reason;
-
-//   wakeup_reason = esp_sleep_get_wakeup_cause();
-
-//   switch (wakeup_reason)
-//   {
-//   case ESP_SLEEP_WAKEUP_EXT0:
-//     Serial.println("Wakeup caused by external signal using RTC_IO");
-//     break;
-//   case ESP_SLEEP_WAKEUP_EXT1:
-//     Serial.println("Wakeup caused by external signal using RTC_CNTL");
-//     break;
-//   case ESP_SLEEP_WAKEUP_TIMER:
-//     Serial.println("Wakeup caused by timer");
-//     break;
-//   case ESP_SLEEP_WAKEUP_TOUCHPAD:
-//     Serial.println("Wakeup caused by touchpad");
-//     break;
-//   case ESP_SLEEP_WAKEUP_ULP:
-//     Serial.println("Wakeup caused by ULP program");
-//     break;
-//   default:
-//     Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
-//     break;
-//   }
-// }
 
 void connectToWifi()
 {
@@ -76,7 +44,7 @@ void WiFiEvent(WiFiEvent_t event)
     break;
   case SYSTEM_EVENT_STA_DISCONNECTED:
     Serial.println("WiFi lost connection");
-    //xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+    xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
     xTimerStart(wifiReconnectTimer, 0);
     break;
   }
@@ -123,7 +91,7 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
 {
   Serial.println("Publish received.");
 }
-int i = 1;
+int i = 0;
 long sendTime;
 long returnTime;
 void onMqttPublish(uint16_t packetId)
@@ -162,7 +130,7 @@ void loop()
   {
     long start = millis();
 
-    Serial.println("Sending packets with qos 0");
+    Serial.println("Sending 500 packets with qos 0");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");
@@ -172,15 +140,16 @@ void loop()
     Serial.printf("Took %ld ms\n", (end - start));
     delay(1000);
     start = millis();
-    Serial.println("Sending packets with qos 1");
+    Serial.println("Sending 500 packets with qos 1");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");
     }
     end = millis();
-    Serial.printf("Took %ld s\n", (end - start) / 1000);
+    Serial.printf("Took %ld ms\n", (end - start));
     //mqttClient.disconnect();
     delay(1000);
-    i = 1;
+    Serial.printf("Received %i PUBACKs after 1 second.\n", i);
+    i = 0;
   }
 }

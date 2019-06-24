@@ -116,7 +116,7 @@ fun main() {
                 mqttLog.info(
                     "Time between packages: min ${bothTimes.min()!!}ns " +
                             "max ${bothTimes.max()!! / 1_000_000}ms " +
-                            "avg ${(".2f").format((bothTimes.average() / 1_000_000))}ms"
+                            "avg ${("%.2f").format((bothTimes.average() / 1_000_000))}ms"
                 )
 
                 transaction(db) {
