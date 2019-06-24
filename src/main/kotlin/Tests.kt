@@ -2,55 +2,49 @@ import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.mqtt.MqttClient
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
-import kotlin.system.measureTimeMillis
 
 fun main() {
     //Clients Simulation
 
-    var nExceptions = 0
 
-    val runnable = Runnable {
-        try {
-            val mqttClient = MqttClient.create(Vertx.vertx())
-                .connect(1883, "192.168.1.70") {
-                    if (it.failed()) {
-                        mqttLog.error("Couldn't connect: ${it.cause()}")
-                    }
+    try {
+        val mqttClient = MqttClient.create(Vertx.vertx())
+            .connect(1883, "localhost") {
+                if (it.failed()) {
+                    mqttLog.error("Couldn't connect: ${it.cause()}")
                 }
-
-            while (mqttClient.isConnected.not()) {
             }
 
-            for (i in 0..Random.nextInt(6)) {
+        while (mqttClient.isConnected.not()) {
+        }
+
+        while (true) {
+            for (i in 0..500) {
                 mqttClient.publish(
-                    "temperature",
-                    Buffer.buffer("${Random.nextDouble(-40.0, 80.0)}"),
+                    "test",
+                    Buffer.buffer("a"),
                     MqttQoS.AT_LEAST_ONCE,
                     false, false
                 )
-                Thread.sleep(Random.nextLong(800, 1000))
+                Thread.sleep(10)
+
             }
-
-            mqttClient.disconnect()
-        } catch (e: Exception) {
-            nExceptions++
-        }
-    }
-
-
-    val pool = Executors.newFixedThreadPool(20)
-
-    val time = measureTimeMillis {
-        for (i in 1..5) {
-            pool.execute(runnable)
-            Thread.sleep(Random.nextLong(50))
+            Thread.sleep(500)
+            for (i in 0..500) {
+                mqttClient.publish(
+                    "test",
+                    Buffer.buffer("a"),
+                    MqttQoS.AT_MOST_ONCE,
+                    false, false
+                )
+                Thread.sleep(10)
+            }
+            Thread.sleep(500)
         }
 
-        while (pool.awaitTermination(1, TimeUnit.SECONDS)){}
+        mqttClient.disconnect()
+    } catch (e: Exception) {
+        mqttLog.error(e.message)
     }
 
-    dbLog.info("Took $time ms with $nExceptions exceptions.")
 }
