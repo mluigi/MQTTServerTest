@@ -15,7 +15,7 @@ fun main() {
     val runnable = Runnable {
         try {
             val mqttClient = MqttClient.create(Vertx.vertx())
-                .connect(1883, "localhost") {
+                .connect(1883, "192.168.1.70") {
                     if (it.failed()) {
                         mqttLog.error("Couldn't connect: ${it.cause()}")
                     }
@@ -31,7 +31,7 @@ fun main() {
                     MqttQoS.AT_LEAST_ONCE,
                     false, false
                 )
-                Thread.sleep(Random.nextLong(200,600))
+                Thread.sleep(Random.nextLong(800, 1000))
             }
 
             mqttClient.disconnect()
@@ -44,7 +44,7 @@ fun main() {
     val pool = Executors.newFixedThreadPool(20)
 
     val time = measureTimeMillis {
-        for (i in 1..2) {
+        for (i in 1..5) {
             pool.execute(runnable)
             Thread.sleep(Random.nextLong(50))
         }
