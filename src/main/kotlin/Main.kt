@@ -35,7 +35,8 @@ object Times : Table() {
 object Sessions : Table() {
     val id = integer("id").autoIncrement().primaryKey()
     val startDate = datetime("startDate")
-    val packetsReceived = integer("packetsReceived")
+    val QOS0Packets = integer("QOS0Packets")
+    val QOS1Packets = integer("QOS1Packets")
     val packetsSent = integer("packetsSent")
 }
 
@@ -47,7 +48,8 @@ fun main() {
         SchemaUtils.create(Devices, Sessions, Times)
         sesId = Sessions.insert {
             it[startDate] = DateTime.now()
-            it[packetsReceived] = 0
+            it[QOS0Packets] = 0
+            it[QOS1Packets] = 0
             it[packetsSent] = 0
         } get Sessions.id
         dbLog.info("Created Devices, Sessions and Times tables.")
@@ -143,7 +145,8 @@ fun main() {
                     }
                     Sessions.update(where = { Sessions.id eq sesId }) {
                         with(SqlExpressionBuilder) {
-                            it.update(packetsReceived, packetsReceived + packetsALO.size + packetsAMO.size)
+                            it.update(QOS0Packets, QOS0Packets + packetsAMO.size)
+                            it.update(QOS1Packets, QOS1Packets + packetsALO.size)
                             it.update(packetsSent, packetsSent + pubackSent)
                         }
                     }

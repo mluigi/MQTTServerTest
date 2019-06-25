@@ -9,7 +9,7 @@ fun main() {
 
     try {
         val mqttClient = MqttClient.create(Vertx.vertx())
-            .connect(1883, "localhost") {
+            .connect(1883, "192.168.1.70") {
                 if (it.failed()) {
                     mqttLog.error("Couldn't connect: ${it.cause()}")
                 }
