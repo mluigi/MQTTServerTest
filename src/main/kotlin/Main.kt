@@ -4,6 +4,7 @@ import io.vertx.core.Vertx
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -27,15 +28,28 @@ object Devices : Table() {
 
 object Times : Table() {
     val id = integer("id").autoIncrement().primaryKey()
-    //val sessionId = integer("sessionId") references Sessions.id
+    val sessionId = integer("sessionId") references Sessions.id
     val time = long("time")
+}
+
+object Sessions : Table() {
+    val id = integer("id").autoIncrement().primaryKey()
+    val startDate = datetime("startDate")
+    val packetsReceived = integer("packetsReceived")
+    val packetsSent = integer("packetsSent")
 }
 
 
 fun main() {
+    var sesId = 0
     transaction(db) {
-        SchemaUtils.drop(Devices, /*Sessions,*/Times)
-        SchemaUtils.create(Devices, /*Sessions,*/ Times)
+        SchemaUtils.drop(Devices, Sessions, Times)
+        SchemaUtils.create(Devices, Sessions, Times)
+        sesId = Sessions.insert {
+            it[startDate] = DateTime.now()
+            it[packetsReceived] = 0
+            it[packetsSent] = 0
+        } get Sessions.id
         dbLog.info("Created Devices, Sessions and Times tables.")
     }
 
@@ -115,8 +129,8 @@ fun main() {
                 val bothTimes = packetsALO.plus(packetsAMO).map { it.second }.toLongArray()
                 mqttLog.info(
                     "Time between packages: min ${bothTimes.min()!!}ns " +
-                            "max ${bothTimes.max()!! / 1_000_000}ms " +
-                            "avg ${("%.2f").format((bothTimes.average() / 1_000_000))}ms"
+                            "max ${"%.2f".format(bothTimes.max()!!.toDouble() / 1_000_000)}ms " +
+                            "avg ${"%.2f".format((bothTimes.average() / 1_000_000))}ms"
                 )
 
                 transaction(db) {
@@ -124,8 +138,14 @@ fun main() {
                         .plus(packetsAMO)
                         .sortedBy { it.first }
                         .map { it.second }) { timeBetweenPackets ->
-                        //                            this[sessionId] = sesId
                         this[time] = timeBetweenPackets
+                        this[Times.sessionId] = sesId
+                    }
+                    Sessions.update(where = { Sessions.id eq sesId }) {
+                        with(SqlExpressionBuilder) {
+                            it.update(packetsReceived, packetsReceived + packetsALO.size + packetsAMO.size)
+                            it.update(packetsSent, packetsSent + pubackSent)
+                        }
                     }
                 }
 
