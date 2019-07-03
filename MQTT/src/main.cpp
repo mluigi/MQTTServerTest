@@ -98,6 +98,10 @@ void onMqttPublish(uint16_t packetId)
 {
   returnTime = millis();
   ++pubacks;
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(2000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(2000);
 }
 
 void setup()
@@ -105,6 +109,7 @@ void setup()
   Serial.begin(115200);
   Serial.println();
   Serial.println();
+  pinMode(LED_BUILTIN, OUTPUT);
   delay(1000);
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
