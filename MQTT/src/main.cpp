@@ -7,10 +7,10 @@ extern "C"
 #include "freertos/timers.h"
 }
 
-#define WIFI_SSID "FASTWEB-tsT92f"
-#define WIFI_PASSWORD "meloncello10"
+#define WIFI_SSID "OnePlus6"
+#define WIFI_PASSWORD "test1234"
 
-#define MQTT_HOST IPAddress(192,168,1,70)
+#define MQTT_HOST IPAddress(192,168,43,116)
 #define MQTT_PORT 1883
 
 AsyncMqttClient mqttClient;
@@ -44,7 +44,7 @@ void WiFiEvent(WiFiEvent_t event)
     break;
   case SYSTEM_EVENT_STA_DISCONNECTED:
     Serial.println("WiFi lost connection");
-    xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+    xTimerStop(mqttReconnectTimer, 0); 
     xTimerStart(wifiReconnectTimer, 0);
     break;
   }
@@ -91,14 +91,13 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
 {
   Serial.println("Publish received.");
 }
-int i = 0;
+int pubacks = 0;
 long sendTime;
 long returnTime;
 void onMqttPublish(uint16_t packetId)
 {
   returnTime = millis();
-  //Serial.printf("%d. Return time = %ld ms\n", i, (returnTime - sendTime));
-  ++i;
+  ++pubacks;
 }
 
 void setup()
@@ -147,9 +146,8 @@ void loop()
     }
     end = millis();
     Serial.printf("Took %ld ms\n", (end - start));
-    //mqttClient.disconnect();
     delay(1000);
-    Serial.printf("Received %i PUBACKs after 1 second.\n", i);
-    i = 0;
+    Serial.printf("Received %i PUBACKs after 1 second.\n", pubacks);
+    pubacks = 0;
   }
 }
