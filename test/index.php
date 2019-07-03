@@ -42,6 +42,7 @@
 </section>
 <section class="card-container" style="margin: auto; height:75vh; width:90vw">
     <canvas id="myChart" class="card" width="5" height="2"></canvas>
+    <canvas id="LossChart" class="card" width="5" height="2"></canvas>
 </section>
 <script id="source" type="text/javascript">
     $(function () {
@@ -80,6 +81,42 @@
                 }
             }
         });
+        const lossChart = new Chart($('#LossChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: "PacketLoss(t)",
+                        data: [],
+                        borderWidth: 1,
+                        backgroundColor: 'rgb(155, 155, 155)',
+                        borderColor: 'rgb(100,100,100)'
+                    },
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            let val = tooltipItem.yLabel / 1000000;
+                            let label = parseFloat(val).toFixed(2) + "ms";
+                            return label;
+                        }
+                    }
+                }
+            }
+        });
+
+        let lossArray = [];
 
         function update() {
             $.ajax({
@@ -105,9 +142,13 @@
                     $(".qos1").text(qos1);
                     $(".puback").text(dati["packetsSent"]);
                     let idArray = data[2].map(Number);
+                    lossArray.push(qos1-dati["packetsSent"]);
+                    lossChart.data.datasets[0].data = lossArray;
+                    lossChart.data.labels = lossArray.keys();
                     myChart.data.labels = idArray;
                     myChart.data.datasets[0].data = timesArray;
                     myChart.update();
+                    lossChart.update();
                 }
             });
             setTimeout(update, 2000)
