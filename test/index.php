@@ -39,6 +39,7 @@
         <h1 class="title">Media</h1>
         <p class="description media">0</p>
     </div>
+    <button class = "cubered cancelButton">cancel</button>
 </section>
 <section class="card-container" style="margin: auto; height:75vh; width:90vw">
     <canvas id="myChart" class="card" width="5" height="2"></canvas>
@@ -46,6 +47,11 @@
 </section>
 <script id="source" type="text/javascript">
     $(function () {
+        $(".cancelButton").click(function(){
+            $.ajax({
+                url: 'cancel.php'
+            });
+        });
         let ctx = $('#myChart');
         const myChart = new Chart(ctx, {
             type: 'line',
