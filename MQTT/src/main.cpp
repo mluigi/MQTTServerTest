@@ -17,13 +17,13 @@ AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
-void connectToWifi()
+void connectToWifi()    //connessione esp al wi-fi
 {
   Serial.println("Connecting to Wi-Fi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
 
-void connectToMqtt()
+void connectToMqtt()    //funzione di connessione al server
 {
   Serial.println("Connecting to MQTT...");
   mqttClient.setKeepAlive(4);
@@ -31,7 +31,7 @@ void connectToMqtt()
   mqttClient.connect();
 }
 
-void WiFiEvent(WiFiEvent_t event)
+void WiFiEvent(WiFiEvent_t event)   //funzione di gestione eventi wi-fi
 {
   Serial.printf("[WiFi-event] event: %d\n", event);
   switch (event)
@@ -50,14 +50,14 @@ void WiFiEvent(WiFiEvent_t event)
   }
 }
 
-void onMqttConnect(bool sessionPresent)
+void onMqttConnect(bool sessionPresent)   //funzione di gestione evento connessione al server MQTT
 {
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
 }
 
-void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)   //funzione di gestione evento disconnessione dal server MQTT
 {
   while (mqttClient.connected())
   {
@@ -65,13 +65,13 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
     delay(1000);
   }
   Serial.println("Disconnected from MQTT.");
-  if (WiFi.isConnected())
+  if (WiFi.isConnected())   //controllo sullo stato della connessione del wi-fi
   {
     xTimerStart(mqttReconnectTimer, 0);
   }
 }
 
-void onMqttSubscribe(uint16_t packetId, uint8_t qos)
+void onMqttSubscribe(uint16_t packetId, uint8_t qos)    //funzione di gestione accreditamento riuscito sul server
 {
   Serial.println("Subscribe acknowledged.");
   Serial.print("  packetId: ");
@@ -80,7 +80,7 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos)
   Serial.println(qos);
 }
 
-void onMqttUnsubscribe(uint16_t packetId)
+void onMqttUnsubscribe(uint16_t packetId)   //funzione di gestione disaccreditamento dal server
 {
   Serial.println("Unsubscribe acknowledged.");
   Serial.print("  packetId: ");
@@ -116,6 +116,8 @@ void setup()
 
   WiFi.onEvent(WiFiEvent);
 
+  //avvio servizi di connessione al server
+
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
   mqttClient.onSubscribe(onMqttSubscribe);
@@ -130,16 +132,16 @@ void setup()
 
 void loop()
 {
-  if (mqttClient.connected())
+  if (mqttClient.connected()) //controllo se sono connesso al server
   {
     long start = millis();
 
     Serial.println("Sending 500 packets with qos 0");
     for (int i = 0; i < 500; ++i)
     {
-      mqttClient.publish("test", 0, false, "pack");
+      mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
     }
-    mqttClient.publish("test", 0, false, "end");
+    mqttClient.publish("test", 0, false, "end");    //invio pacchetto finale
     long end = millis();
     Serial.printf("Took %ld ms\n", (end - start));
     delay(1000);
@@ -147,7 +149,7 @@ void loop()
     Serial.println("Sending 500 packets with qos 1");
     for (int i = 0; i < 500; ++i)
     {
-      mqttClient.publish("test", 1, false, "pack");
+      mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
     }
     end = millis();
     Serial.printf("Took %ld ms\n", (end - start));
