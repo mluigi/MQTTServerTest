@@ -30,6 +30,7 @@ object Times : Table() {    //creo tabella dei tempi
     val id = integer("id").autoIncrement().primaryKey()
     val sessionId = integer("sessionId") references Sessions.id
     val time = long("time")
+    val deviceId = integer("deviceId") references Devices.id
 }
 
 object Sessions : Table() {     //creo tabella delle sessioni
@@ -59,13 +60,13 @@ fun main() {
 
     val packetsAMO = ArrayList<Pair<Int, Long>>()
     val packetsALO = ArrayList<Pair<Int, Long>>()
-
+    val mesToDevIdMap = HashMap<Int, Int>()
     var pubackSent = 0
 
     //gestore connessioni al server, cattura dell'evento di connessione
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
-        var devId: Int
+        var devId = 0
         transaction(db) {
             devId = Devices.insertIgnore {
                 it[name] = endpoint.clientIdentifier()
@@ -85,8 +86,14 @@ fun main() {
                 MqttQoS.AT_MOST_ONCE -> {
                     val curr = System.nanoTime()    //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
-                        if (prev != 0L) {
-                            packetsAMO.add(Pair(it.messageId(), curr - prev))       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
+                        if (prev != 0L && curr - prev < 500_000_000) {
+                            packetsAMO.add(
+                                Pair(
+                                    it.messageId(),
+                                    curr - prev
+                                )
+                            ) //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
+                            mesToDevIdMap[it.messageId()] = devId
                         }
                     }
                     prev = curr
@@ -96,8 +103,9 @@ fun main() {
                     ++pubackSent
                     val curr = System.nanoTime()       //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
-                        if (prev != 0L) {
+                        if (prev != 0L && curr - prev < 500_000_000) {
                             packetsALO.add(Pair(it.messageId(), curr - prev))       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
+                            mesToDevIdMap[it.messageId()] = devId
                         }
                     }
                     prev = curr
@@ -130,20 +138,20 @@ fun main() {
             if (packetsALO.size > 0 || packetsAMO.size > 0 || pubackSent > 0) {     //controllo se ho ricevuto messaggi
                 mqttLog.info("Ricevuti ${packetsAMO.size + packetsALO.size} pacchetti")
                 mqttLog.info("${packetsAMO.size} QoS 1, ${packetsALO.size} QoS 2, PUBACKs inviato $pubackSent")
-                val bothTimes = packetsALO.plus(packetsAMO).map { it.second }.toLongArray()
+                val bothTimes = packetsALO.plus(packetsAMO).sortedBy { it.first }.map { it.second }
                 mqttLog.info(
-                    "Tempo tra i pacchetti: min ${bothTimes.min()!!}ns " +
-                            "max ${"%.2f".format(bothTimes.max()!!.toDouble() / 1_000_000)}ms " +
-                            "avg ${"%.2f".format((bothTimes.average() / 1_000_000))}ms"
+                    "Tempo tra i pacchetti: min ${bothTimes.toLongArray().min()!!}ns " +
+                            "max ${"%.2f".format(bothTimes.toLongArray().max()!!.toDouble() / 1_000_000)}ms " +
+                            "avg ${"%.2f".format((bothTimes.toLongArray().average() / 1_000_000))}ms"
                 )
 
-                transaction(db) {       
-                    Times.batchInsert(packetsALO    //inserisco l'array creato sotto nel database
-                        .plus(packetsAMO)       //unione packetsAMO & packetsALO
-                        .sortedBy { it.first }  //ordino per idMessaggio
-                        .map { it.second }) { timeBetweenPackets ->     //creo un array di [differenza tra t(mess corrente) e t(mess precedente)]
-                        this[time] = timeBetweenPackets
+                transaction(db) {
+                    Times.batchInsert(packetsALO.plus(packetsAMO).sortedBy { it.first }) { (messageid, times) ->
+                        //creo un array di [differenza tra t(mess corrente) e t(mess precedente)]
+                        val devId = mesToDevIdMap[messageid]
+                        this[time] = times
                         this[Times.sessionId] = sesId
+                        this[Times.deviceId] = devId!!
                     }
                     Sessions.update(where = { Sessions.id eq sesId }) {     //aggiorno la riga della sessione
                         with(SqlExpressionBuilder) {
