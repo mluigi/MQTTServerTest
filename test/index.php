@@ -192,7 +192,7 @@
                     let TimesArray1 = new Array();
                     let idArray2 = new Array();
                     let TimesArray2 = new Array();
-                    console.log(idArray.length);
+                    console.log(devId);
                     for(i=0; i<idArray.length; i++){
                         if(devId[i]==1){
                             idArray1.push(idArray[i]);
