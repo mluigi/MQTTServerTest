@@ -110,15 +110,6 @@
                             beginAtZero: true
                         }
                     }]
-                },
-                tooltips: {
-                    callbacks: {
-                        label: function (tooltipItem, data) {
-                            let val = tooltipItem.yLabel / 1000000;
-                            let label = parseFloat(val).toFixed(2) + "ms";
-                            return label;
-                        }
-                    }
                 }
             }
         });
@@ -185,27 +176,27 @@
                     $(".puback").text(dati["packetsSent"]);
                     let idArray = data[2].map(Number);
                     lossArray.push(qos1-dati["packetsSent"]);
+                    let indexesLossArray=[];
+                    for (let key of lossArray.keys()) {
+                        indexesLossArray.push(key);
+                    }
                     lossChart.data.datasets[0].data = lossArray;
-                    lossChart.data.labels = lossArray.keys();
+                    lossChart.data.labels = indexesLossArray;
                     let devId = data[3].map(Number);
-                    let idArray1 = new Array();
-                    let TimesArray1 = new Array();
-                    let idArray2 = new Array();
-                    let TimesArray2 = new Array();
-                    console.log(devId);
+                    let idArray1 = [];
+                    let TimesArray1 = [];
+                    let idArray2 = [];
+                    let TimesArray2 = [];
                     for(i=0; i<idArray.length; i++){
-                        if(devId[i]==1){
+                        if(devId[i]===1){
                             idArray1.push(idArray[i]);
-                            console.log(idArray[i]);
                             TimesArray1.push(timesArray[i]);
                         }
-                        else if(devId[i]==2){
+                        else if(devId[i]===2){
                             idArray2.push(idArray[i]);
                             TimesArray2.push(timesArray[i]);
                         }
                     }
-                    console.log(idArray1);
-                    console.log(TimesArray1);
 
                     myChart.data.labels = idArray1;
                     myChart.data.datasets[0].data = TimesArray1;
