@@ -50,11 +50,11 @@ void WiFiEvent(WiFiEvent_t event)   //funzione di gestione eventi wi-fi
   }
 }
 
-void onMqttConnect(bool sessionPresent)   //funzione di gestione evento connessione al server MQTT
+void onMqttConnect(bool currentSession)   //funzione di gestione evento connessione al server MQTT
 {
   Serial.println("Connesso al server MQTT.");
   Serial.print("Sessione corrente: ");
-  Serial.println(sessionPresent);
+  Serial.println(currentSession);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)   //funzione di gestione evento disconnessione dal server MQTT
@@ -91,9 +91,11 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
 {
   Serial.println("Publish ricevuto.");
 }
+
 int pubacks = 0;
 long sendTime;
 long returnTime;
+
 void onMqttPublish(uint16_t packetId)
 {
   returnTime = millis();
@@ -134,26 +136,34 @@ void loop()
 {
   if (mqttClient.connected()) //controllo se sono connesso al server
   {
-    long start = millis();
+    long start = millis();    //salvo l'istante iniziale
 
     Serial.println("Inviando 500 pacchetti con QOS0...");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
     }
+
     mqttClient.publish("test", 0, false, "end");    //invio pacchetto finale
-    long end = millis();
+
+    long end = millis();    //salvo l'istante finale
+
     Serial.printf("Tempo impiegato %ld ms\n", (end - start));
     delay(1000);
-    start = millis();
+
+    start = millis();   //salvo l'istante iniziale
+
     Serial.println("Inviando 500 pacchetti con QOS1...");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
     }
-    end = millis();
+
+    end = millis();   //salvo l'istante finale
+
     Serial.printf("Tempo impiegato %ld ms\n", (end - start));
     delay(1000);
+
     Serial.printf("Ricevuti %i PUBACKs dopo 1 secondo.\n", pubacks);
     pubacks = 0;
   }
