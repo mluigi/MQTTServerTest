@@ -19,7 +19,7 @@ val db = Database.connect(
     user = "test", password = ""
 )
 
-val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())
+val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())   //creazione server MQTT
 
 object Devices : Table() {
     val id = integer("id").autoIncrement().primaryKey()
@@ -43,10 +43,10 @@ object Sessions : Table() {
 
 fun main() {
     var sesId = 0
-    transaction(db) {
-        SchemaUtils.drop(Devices, Sessions, Times)
-        SchemaUtils.create(Devices, Sessions, Times)
-        sesId = Sessions.insert {
+    transaction(db) {       //creazione tabelle database
+        SchemaUtils.drop(Devices, Sessions, Times)      //svuotamento database
+        SchemaUtils.create(Devices, Sessions, Times)        //creazione database
+        sesId = Sessions.insert {       //inizializzazione database
             it[startDate] = DateTime.now()
             it[QOS0Packets] = 0
             it[QOS1Packets] = 0
@@ -55,13 +55,14 @@ fun main() {
         dbLog.info("Created Devices, Sessions and Times tables.")
     }
 
-    val lock = Any()
+    val lock = Any()        //serve per il semaforo
 
     val packetsAMO = ArrayList<Pair<Int, Long>>()
     val packetsALO = ArrayList<Pair<Int, Long>>()
 
     var pubackSent = 0
 
+    //gestore connessioni al server, cattura dell'evento di connessione
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] request to connect, clean session = ${endpoint.isCleanSession}")
         var devId: Int
@@ -78,13 +79,14 @@ fun main() {
 
         var prev = 0L
 
+        //gestore evento di publish
         endpoint.publishHandler {
             when (it.qosLevel()) {
                 MqttQoS.AT_MOST_ONCE -> {
-                    val curr = System.nanoTime()
+                    val curr = System.nanoTime()    //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
                         if (prev != 0L) {
-                            packetsAMO.add(Pair(it.messageId(), curr - prev))
+                            packetsAMO.add(Pair(it.messageId(), curr - prev))       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
                         }
                     }
                     prev = curr
@@ -92,10 +94,10 @@ fun main() {
                 MqttQoS.AT_LEAST_ONCE -> {
                     endpoint.publishAcknowledge(it.messageId())
                     ++pubackSent
-                    val curr = System.nanoTime()
+                    val curr = System.nanoTime()       //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
                         if (prev != 0L) {
-                            packetsALO.add(Pair(it.messageId(), curr - prev))
+                            packetsALO.add(Pair(it.messageId(), curr - prev))       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
                         }
                     }
                     prev = curr
@@ -112,10 +114,10 @@ fun main() {
             mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnected.")
         }.exceptionHandler {
             mqttLog.info("${it.cause}: ${it.message}")
-        }.accept(true)
+        }.accept(true)      //accetta connessione
     }.exceptionHandler {
         mqttLog.info("${it.cause}: ${it.message}")
-    }.listen { ar ->
+    }.listen { ar ->        //mette in ascolto il server
         if (ar.succeeded()) {
             mqttLog.info("MQTT server is listening on port ${ar.result().actualPort()}")
         } else {
@@ -125,7 +127,7 @@ fun main() {
     }
     Timer().scheduleAtFixedRate(0, 1000) {
         synchronized(lock) {
-            if (packetsALO.size > 0 || packetsAMO.size > 0 || pubackSent > 0) {
+            if (packetsALO.size > 0 || packetsAMO.size > 0 || pubackSent > 0) {     //controllo se ho ricevuto messaggi
                 mqttLog.info("Received ${packetsAMO.size + packetsALO.size} packets")
                 mqttLog.info("${packetsAMO.size} QoS 1, ${packetsALO.size} QoS 2, PUBACKs sent $pubackSent")
                 val bothTimes = packetsALO.plus(packetsAMO).map { it.second }.toLongArray()
@@ -135,15 +137,15 @@ fun main() {
                             "avg ${"%.2f".format((bothTimes.average() / 1_000_000))}ms"
                 )
 
-                transaction(db) {
-                    Times.batchInsert(packetsALO
-                        .plus(packetsAMO)
-                        .sortedBy { it.first }
-                        .map { it.second }) { timeBetweenPackets ->
+                transaction(db) {       
+                    Times.batchInsert(packetsALO    //inserisco l'array creato sotto nel database
+                        .plus(packetsAMO)       //unione packetsAMO & packetsALO
+                        .sortedBy { it.first }  //ordino per idMessaggio
+                        .map { it.second }) { timeBetweenPackets ->     //creo un array di [differenza tra t(mess corrente) e t(mess precedente)]
                         this[time] = timeBetweenPackets
                         this[Times.sessionId] = sesId
                     }
-                    Sessions.update(where = { Sessions.id eq sesId }) {
+                    Sessions.update(where = { Sessions.id eq sesId }) {     //aggiorno la riga della sessione
                         with(SqlExpressionBuilder) {
                             it.update(QOS0Packets, QOS0Packets + packetsAMO.size)
                             it.update(QOS1Packets, QOS1Packets + packetsALO.size)
@@ -152,7 +154,7 @@ fun main() {
                     }
                 }
 
-                packetsALO.clear()
+                packetsALO.clear()      //azzero i dati temporanei
                 packetsAMO.clear()
                 pubackSent = 0
             }
