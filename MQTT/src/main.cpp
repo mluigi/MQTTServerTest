@@ -19,13 +19,13 @@ TimerHandle_t wifiReconnectTimer;
 
 void connectToWifi()    //connessione esp al wi-fi
 {
-  Serial.println("Connecting to Wi-Fi...");
+  Serial.println("Connettendo al Wi-Fi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
 
 void connectToMqtt()    //funzione di connessione al server
 {
-  Serial.println("Connecting to MQTT...");
+  Serial.println("Connettendo al server MQTT...");
   mqttClient.setKeepAlive(4);
   mqttClient.setCleanSession(true);
   mqttClient.connect();
@@ -33,17 +33,17 @@ void connectToMqtt()    //funzione di connessione al server
 
 void WiFiEvent(WiFiEvent_t event)   //funzione di gestione eventi wi-fi
 {
-  Serial.printf("[WiFi-event] event: %d\n", event);
+  Serial.printf("[WiFi-event] evento: %d\n", event);
   switch (event)
   {
   case SYSTEM_EVENT_STA_GOT_IP:
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
+    Serial.println("WiFi connesso");
+    Serial.println("Indirizzo IP: ");
     Serial.println(WiFi.localIP());
     connectToMqtt();
     break;
   case SYSTEM_EVENT_STA_DISCONNECTED:
-    Serial.println("WiFi lost connection");
+    Serial.println("WiFi: connessione persa.");
     xTimerStop(mqttReconnectTimer, 0); 
     xTimerStart(wifiReconnectTimer, 0);
     break;
@@ -52,8 +52,8 @@ void WiFiEvent(WiFiEvent_t event)   //funzione di gestione eventi wi-fi
 
 void onMqttConnect(bool sessionPresent)   //funzione di gestione evento connessione al server MQTT
 {
-  Serial.println("Connected to MQTT.");
-  Serial.print("Session present: ");
+  Serial.println("Connesso al server MQTT.");
+  Serial.print("Sessione corrente: ");
   Serial.println(sessionPresent);
 }
 
@@ -64,7 +64,7 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)   //funzione di ge
     Serial.print(".");
     delay(1000);
   }
-  Serial.println("Disconnected from MQTT.");
+  Serial.println("Disconnesso dal server MQTT.");
   if (WiFi.isConnected())   //controllo sullo stato della connessione del wi-fi
   {
     xTimerStart(mqttReconnectTimer, 0);
@@ -89,7 +89,7 @@ void onMqttUnsubscribe(uint16_t packetId)   //funzione di gestione disaccreditam
 
 void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
-  Serial.println("Publish received.");
+  Serial.println("Publish ricevuto.");
 }
 int pubacks = 0;
 long sendTime;
@@ -136,25 +136,25 @@ void loop()
   {
     long start = millis();
 
-    Serial.println("Sending 500 packets with qos 0");
+    Serial.println("Inviando 500 pacchetti con QOS0...");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
     }
     mqttClient.publish("test", 0, false, "end");    //invio pacchetto finale
     long end = millis();
-    Serial.printf("Took %ld ms\n", (end - start));
+    Serial.printf("Tempo impiegato %ld ms\n", (end - start));
     delay(1000);
     start = millis();
-    Serial.println("Sending 500 packets with qos 1");
+    Serial.println("Inviando 500 pacchetti con QOS1...");
     for (int i = 0; i < 500; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
     }
     end = millis();
-    Serial.printf("Took %ld ms\n", (end - start));
+    Serial.printf("Tempo impiegato %ld ms\n", (end - start));
     delay(1000);
-    Serial.printf("Received %i PUBACKs after 1 second.\n", pubacks);
+    Serial.printf("Ricevuti %i PUBACKs dopo 1 secondo.\n", pubacks);
     pubacks = 0;
   }
 }

@@ -21,18 +21,18 @@ val db = Database.connect(
 
 val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())   //creazione server MQTT
 
-object Devices : Table() {
+object Devices : Table() {      //creazione tabella dei dispositivi
     val id = integer("id").autoIncrement().primaryKey()
     val name = varchar("name", 50).uniqueIndex()
 }
 
-object Times : Table() {
+object Times : Table() {    //creo tabella dei tempi
     val id = integer("id").autoIncrement().primaryKey()
     val sessionId = integer("sessionId") references Sessions.id
     val time = long("time")
 }
 
-object Sessions : Table() {
+object Sessions : Table() {     //creo tabella delle sessioni
     val id = integer("id").autoIncrement().primaryKey()
     val startDate = datetime("startDate")
     val QOS0Packets = integer("QOS0Packets")
@@ -52,7 +52,7 @@ fun main() {
             it[QOS1Packets] = 0
             it[packetsSent] = 0
         } get Sessions.id
-        dbLog.info("Created Devices, Sessions and Times tables.")
+        dbLog.info("Create tabelle Devices, Sessions e Times.")
     }
 
     val lock = Any()        //serve per il semaforo
@@ -64,7 +64,7 @@ fun main() {
 
     //gestore connessioni al server, cattura dell'evento di connessione
     mqttServer.endpointHandler { endpoint ->
-        mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] request to connect, clean session = ${endpoint.isCleanSession}")
+        mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
         var devId: Int
         transaction(db) {
             devId = Devices.insertIgnore {
@@ -119,20 +119,20 @@ fun main() {
         mqttLog.info("${it.cause}: ${it.message}")
     }.listen { ar ->        //mette in ascolto il server
         if (ar.succeeded()) {
-            mqttLog.info("MQTT server is listening on port ${ar.result().actualPort()}")
+            mqttLog.info("MQTT server è in ascolto sul porto ${ar.result().actualPort()}")
         } else {
-            mqttLog.error("Error on starting the server")
+            mqttLog.error("Errore sull'avvio del server")
             ar.cause().printStackTrace()
         }
     }
     Timer().scheduleAtFixedRate(0, 1000) {
         synchronized(lock) {
             if (packetsALO.size > 0 || packetsAMO.size > 0 || pubackSent > 0) {     //controllo se ho ricevuto messaggi
-                mqttLog.info("Received ${packetsAMO.size + packetsALO.size} packets")
-                mqttLog.info("${packetsAMO.size} QoS 1, ${packetsALO.size} QoS 2, PUBACKs sent $pubackSent")
+                mqttLog.info("Ricevuti ${packetsAMO.size + packetsALO.size} pacchetti")
+                mqttLog.info("${packetsAMO.size} QoS 1, ${packetsALO.size} QoS 2, PUBACKs inviato $pubackSent")
                 val bothTimes = packetsALO.plus(packetsAMO).map { it.second }.toLongArray()
                 mqttLog.info(
-                    "Time between packages: min ${bothTimes.min()!!}ns " +
+                    "Tempo tra i pacchetti: min ${bothTimes.min()!!}ns " +
                             "max ${"%.2f".format(bothTimes.max()!!.toDouble() / 1_000_000)}ms " +
                             "avg ${"%.2f".format((bothTimes.average() / 1_000_000))}ms"
                 )
