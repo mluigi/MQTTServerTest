@@ -204,9 +204,9 @@
                     }
 
                     myChart.data.labels = idArray1;
-                    myChart.data.datasets[0].data = timesArray1;
+                    myChart.data.datasets[0].data = TimesArray1;
                     myChart2.data.labels = idArray2;
-                    myChart2.data.datasets[0].data = timesArray2;
+                    myChart2.data.datasets[0].data = TimesArray2;
                     myChart.update();
                     myChart2.update();
                     lossChart.update();
