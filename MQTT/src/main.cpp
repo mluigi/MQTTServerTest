@@ -36,15 +36,15 @@ void WiFiEvent(WiFiEvent_t event)   //funzione di gestione eventi wi-fi
   Serial.printf("[WiFi-event] evento: %d\n", event);
   switch (event)
   {
-  case SYSTEM_EVENT_STA_GOT_IP:
+  case SYSTEM_EVENT_STA_GOT_IP:   //indirizzo IP ottenuto
     Serial.println("WiFi connesso");
     Serial.println("Indirizzo IP: ");
     Serial.println(WiFi.localIP());
     connectToMqtt();
     break;
-  case SYSTEM_EVENT_STA_DISCONNECTED:
+  case SYSTEM_EVENT_STA_DISCONNECTED:   // connessione wi-fi persa
     Serial.println("WiFi: connessione persa.");
-    xTimerStop(mqttReconnectTimer, 0); 
+    xTimerStop(mqttReconnectTimer, 0);  //tentativi di riconnessione con timer
     xTimerStart(wifiReconnectTimer, 0);
     break;
   }
@@ -67,7 +67,7 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)   //funzione di ge
   Serial.println("Disconnesso dal server MQTT.");
   if (WiFi.isConnected())   //controllo sullo stato della connessione del wi-fi
   {
-    xTimerStart(mqttReconnectTimer, 0);
+    xTimerStart(mqttReconnectTimer, 0);   //tentativi di riconnessione con timer
   }
 }
 
@@ -76,7 +76,7 @@ void onMqttSubscribe(uint16_t packetId, uint8_t qos)    //funzione di gestione a
   Serial.println("Subscribe acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
-  Serial.print("  qos: ");
+  Serial.print("  QOS: ");
   Serial.println(qos);
 }
 
@@ -116,7 +116,7 @@ void setup()
 
   WiFi.onEvent(WiFiEvent);
 
-  //avvio servizi di connessione al server
+  //avvio servizi di connessione al server  MQTT
 
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
