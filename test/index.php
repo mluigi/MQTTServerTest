@@ -183,7 +183,7 @@
                         indexesLossArray.push(key);
                     }
                     lossChart.data.datasets[0].data = lossArray;        //metto i dati sul grafico
-                    lossChart.data.labels = indexesLossArray;           //metto i dati sul grafic
+                    lossChart.data.labels = indexesLossArray;           //metto i dati sul grafico
                     let devId = data[3].map(Number);        //prendo la quarta colonna del database
                     
                     //creo degli array in cui splittare idArray e timesArray
