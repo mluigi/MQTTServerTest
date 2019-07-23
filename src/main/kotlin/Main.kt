@@ -119,7 +119,7 @@ fun main() {
             endpoint.publishComplete(it)
         }.publishAcknowledgeHandler {
         }.disconnectHandler {
-            mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnected.")
+            mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] disconnesso.")
         }.exceptionHandler {
             mqttLog.info("${it.cause}: ${it.message}")
         }.accept(true)      //accetta connessione
@@ -127,9 +127,9 @@ fun main() {
         mqttLog.info("${it.cause}: ${it.message}")
     }.listen { ar ->        //mette in ascolto il server
         if (ar.succeeded()) {
-            mqttLog.info("MQTT server è in ascolto sul porto ${ar.result().actualPort()}")
+            mqttLog.info("Il server MQTT è in ascolto sul porto ${ar.result().actualPort()}.")
         } else {
-            mqttLog.error("Errore sull'avvio del server")
+            mqttLog.error("Errore sull'avvio del server.")
             ar.cause().printStackTrace()
         }
     }
