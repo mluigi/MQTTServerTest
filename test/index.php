@@ -202,6 +202,8 @@
                             TimesArray2.push(timesArray[i]);
                         }
                     }
+                    console.log(idArray1);
+                    console.log(TimesArray1);
 
                     myChart.data.labels = idArray1;
                     myChart.data.datasets[0].data = TimesArray1;
