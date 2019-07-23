@@ -18,9 +18,11 @@ $result = $conn->query($sql);
 $array = $result->fetch_all(MYSQLI_ASSOC);
 $timesarray = array();
 $idarray = array();
+$devIdarray = array();
 foreach ($array as $item) {
     array_push($timesarray, $item["time"]);
     array_push($idarray, $item["id"]);
+    array_push($devIdarray, $item["devId"]);
 }
 $result->free();
 
@@ -33,5 +35,6 @@ $conn->close();
 echo json_encode(array(
     $data[0],
     $timesarray,
-    $idarray
+    $idarray,
+    $devIdarray
 ));

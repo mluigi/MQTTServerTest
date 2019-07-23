@@ -43,6 +43,7 @@
 </section>
 <section class="card-container" style="margin: auto; height:75vh; width:90vw">
     <canvas id="myChart" class="card" width="5" height="2"></canvas>
+    <canvas id="myChart2" class="card" width="5" height="2"></canvas>
     <canvas id="LossChart" class="card" width="5" height="2"></canvas>
 </section>
 <script id="source" type="text/javascript">
@@ -59,11 +60,11 @@
                 labels: [],
                 datasets: [
                     {
-                        label: "Tempi tra gli ultimi 500 pacchetti (in ns)",
+                        label: "Tempi tra gli ultimi 500 pacchetti (in ns) - Client 1",
                         data: [],
                         borderWidth: 1,
                         backgroundColor: 'rgb(155, 155, 155)',
-                        borderColor: 'rgb(100,100,100)'
+                        borderColor: 'rgb(0,76,255)'
                     },
                 ]
             },
@@ -97,7 +98,42 @@
                         data: [],
                         borderWidth: 1,
                         backgroundColor: 'rgb(155, 155, 155)',
-                        borderColor: 'rgb(100,100,100)'
+                        borderColor: 'rgb(255,0,64)'
+                    },
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            let val = tooltipItem.yLabel / 1000000;
+                            let label = parseFloat(val).toFixed(2) + "ms";
+                            return label;
+                        }
+                    }
+                }
+            }
+        });
+
+        const myChart2 = new Chart($('#myChart2'),{
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: "Tempi tra gli ultimi 500 pacchetti (in ns) - Client 2",
+                        data: [],
+                        borderWidth: 1,
+                        backgroundColor: 'rgb(155, 155, 155)',
+                        borderColor: 'rgb(179,255,0)'
                     },
                 ]
             },
@@ -151,9 +187,28 @@
                     lossArray.push(qos1-dati["packetsSent"]);
                     lossChart.data.datasets[0].data = lossArray;
                     lossChart.data.labels = lossArray.keys();
-                    myChart.data.labels = idArray;
-                    myChart.data.datasets[0].data = timesArray;
+                    let devId = data[3].map(Number);
+                    let idArray1 = new Array();
+                    let TimesArray1 = new Array();
+                    let idArray2 = new Array();
+                    let TimesArray1 = new Array();
+                    for(int i=0; i<idArray.length; i++){
+                        if(devId[i]==1){
+                            idArray1.push(idArray[i]);
+                            TimesArray1.push(timesArray[i]);
+                        }
+                        else if(devId[i]==2){
+                            idArray2.push(idArray[i]);
+                            TimesArray2.push(timesArray[i]);
+                        }
+                    }
+
+                    myChart.data.labels = idArray1;
+                    myChart.data.datasets[0].data = timesArray1;
+                    myChart2.data.labels = idArray2;
+                    myChart2.data.datasets[0].data = timesArray2;
                     myChart.update();
+                    myChart2.update();
                     lossChart.update();
                 }
             });
