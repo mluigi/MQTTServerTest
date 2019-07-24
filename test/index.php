@@ -46,15 +46,17 @@
     <canvas id="myChart2" class="card" width="5" height="2"></canvas>
     <canvas id="LossChart" class="card" width="5" height="2"></canvas>
 </section>
+
+
+
 <script id="source" type="text/javascript">
     $(function () {
         $(".cancelButton").click(function(){
             $.ajax({
-                url: 'cancel.php'
+                url: 'cancel.php'       //integra il codice
             });
         });
-        let ctx = $('#myChart');
-        const myChart = new Chart(ctx, {
+        const myChart = new Chart($('#myChart'), {
             type: 'line',
             data: {
                 labels: [],
@@ -153,20 +155,20 @@
 
         function update() {
             $.ajax({
-                url: 'api.php',
+                url: 'api.php',     //integra codice
                 data: "",
                 dataType: 'json',
                 success: function (data) {
-                    let dati = data[0];
-                    let qos0 = dati["QOS0Packets"];
+                    let dati = data[0];     //prendo la prima colonna del database
+                    let qos0 = dati["QOS0Packets"];     
                     let qos1 = dati["QOS1Packets"];
                     let totale = parseInt(qos0) + parseInt(qos1);
-                    let timesArray = data[1].map(Number);
+                    let timesArray = data[1].map(Number);       //prendo la seconda colonna del database
                     var sum = 0;
-                    timesArray.forEach(function (it) {
+                    timesArray.forEach(function (it) {      //sommo i tempi
                         sum += it
                     });
-                    let avg = sum / timesArray.length;
+                    let avg = sum / timesArray.length;      //media
                     $(".min").text(Math.min.apply(Math, timesArray) + "ns");
                     $(".max").text(parseFloat(Math.max.apply(Math, timesArray) / 1000000).toFixed(2) + "ms");
                     $(".media").text(parseFloat(avg / 1000000).toFixed(2) + "ms");
@@ -174,19 +176,23 @@
                     $(".qos0").text(qos0);
                     $(".qos1").text(qos1);
                     $(".puback").text(dati["packetsSent"]);
-                    let idArray = data[2].map(Number);
+                    let idArray = data[2].map(Number);      //prendo la terza colonna del database
                     lossArray.push(qos1-dati["packetsSent"]);
-                    let indexesLossArray=[];
-                    for (let key of lossArray.keys()) {
+                    let indexesLossArray=[];        //dichiaro un vettore di indici
+                    for (let key of lossArray.keys()) {     //che cazzo hai fatto luigi?
                         indexesLossArray.push(key);
                     }
-                    lossChart.data.datasets[0].data = lossArray;
-                    lossChart.data.labels = indexesLossArray;
-                    let devId = data[3].map(Number);
-                    let idArray1 = [];
+                    lossChart.data.datasets[0].data = lossArray;        //metto i dati sul grafico
+                    lossChart.data.labels = indexesLossArray;           //metto i dati sul grafico
+                    let devId = data[3].map(Number);        //prendo la quarta colonna del database
+                    
+                    //creo degli array in cui splittare idArray e timesArray
+                    let idArray1 = [];      
                     let TimesArray1 = [];
                     let idArray2 = [];
                     let TimesArray2 = [];
+
+                    //splitto idArray e timesArray a seconda del client 
                     for(i=0; i<idArray.length; i++){
                         if(devId[i]===1){
                             idArray1.push(idArray[i]);
@@ -197,11 +203,13 @@
                             TimesArray2.push(timesArray[i]);
                         }
                     }
-
+                    //metto i dati sui grafici
                     myChart.data.labels = idArray1;
                     myChart.data.datasets[0].data = TimesArray1;
                     myChart2.data.labels = idArray2;
                     myChart2.data.datasets[0].data = TimesArray2;
+
+                    //aggiorno i grafici se ci sono variazioni di dati
                     myChart.update();
                     myChart2.update();
                     lossChart.update();
