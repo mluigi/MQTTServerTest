@@ -108,8 +108,8 @@ void onMqttPublish(uint16_t packetId)
   delay(2000);
 }
 
-int button1Pin = 2;
-int button2Pin = 3;
+int button1Pin = 26;
+int button2Pin = 25;
 int led1Pin = 11;
 int led2Pin = 12;
 
