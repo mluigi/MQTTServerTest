@@ -18,7 +18,7 @@ fun main() {
         while (mqttClient.isConnected.not()) {
         }
 
-        while (true) {
+        for (j in 0..5) {
             for (i in 0..500) {
                 mqttClient.publish(
                     "test",

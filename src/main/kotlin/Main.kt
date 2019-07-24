@@ -76,16 +76,15 @@ fun main() {
 
         var devId = 0
         transaction(db) {
-            val updateReturn = Devices.update(where = { Devices.ip eq endpoint.remoteAddress().host() }) {
-                it[name] = endpoint.clientIdentifier()
-            }
-            if (updateReturn == 0) {
+            if (Devices.update(where = { Devices.ip eq endpoint.remoteAddress().host() }) {
+                    it[name] = endpoint.clientIdentifier()
+                } == 0) {
                 devId = Devices.insert {
                     it[name] = endpoint.clientIdentifier()
                     it[ip] = endpoint.remoteAddress().host()
                 } get Devices.id
             } else {
-                devId = updateReturn
+                devId = Devices.select(where = { Devices.ip eq endpoint.remoteAddress().host() }).first()[Devices.id]
             }
         }
         if (endpoint.auth() != null) {
