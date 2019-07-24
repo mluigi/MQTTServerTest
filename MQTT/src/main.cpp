@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <AsyncMqttClient.h>
 #include <WiFi.h>
+#include <time.h>
+#include <stdlib.h>
 extern "C"
 {
 #include "freertos/FreeRTOS.h"
@@ -106,12 +108,26 @@ void onMqttPublish(uint16_t packetId)
   delay(2000);
 }
 
+int button1Pin = 2;
+int button2Pin = 3;
+int led1Pin = 11;
+int led2Pin = 12;
+
 void setup()
-{
+{ 
+  srand(time(NULL)); 
   Serial.begin(115200);
   Serial.println();
   Serial.println();
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(button1Pin, INPUT);
+  pinMode(button2Pin, INPUT);
+  pinMode(led1Pin, OUTPUT);
+  pinMode(led2Pin, OUTPUT);
+
+  digitalWrite(led1Pin, HIGH);
+  digitalWrite(led2Pin, LOW);
+
   delay(1000);
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
@@ -137,9 +153,27 @@ void loop()
   if (mqttClient.connected()) //controllo se sono connesso al server
   {
     long start = millis();    //salvo l'istante iniziale
+    button1State = digitalRead(button1Pin);
+    button2State = digitalRead(button2Pin);
+    bool randomize = false;
 
     Serial.println("Inviando 500 pacchetti con QOS0...");
-    for (int i = 0; i < 500; ++i)
+
+    if(button1State == HIGH){
+      randomize = true;
+      digitalWrite(led1Pin, HIGH);
+      digitalWrite(led2Pin, LOW);
+    }
+
+    if(button2State == HIGH){
+      randomize = false;
+      digitalWrite(led1Pin, LOW);
+      digitalWrite(led2Pin, HIGH);
+    }
+
+    int random_num = rand();
+
+    for (int i = 0; i < randomize ? random_num % 5000 : 500; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
     }
@@ -154,7 +188,7 @@ void loop()
     start = millis();   //salvo l'istante iniziale
 
     Serial.println("Inviando 500 pacchetti con QOS1...");
-    for (int i = 0; i < 500; ++i)
+    for (int i = 0; i < randomize ? random_num % 5000 : 500; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
     }
