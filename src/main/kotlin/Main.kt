@@ -76,10 +76,17 @@ fun main() {
 
         var devId = 0
         transaction(db) {
-            devId = Devices.update(where = { Devices.ip eq endpoint.remoteAddress().host() }) {
+            val updateReturn = Devices.update(where = { Devices.ip eq endpoint.remoteAddress().host() }) {
                 it[name] = endpoint.clientIdentifier()
             }
-            dbLog.info("BUUUUUUU = $devId")
+            if (updateReturn == 0) {
+                devId = Devices.insert {
+                    it[name] = endpoint.clientIdentifier()
+                    it[ip] = endpoint.remoteAddress().host()
+                } get Devices.id
+            } else {
+                dbLog.info("BUUUUUUU = $updateReturn")
+            }
         }
         if (endpoint.auth() != null) {
             mqttLog.info("[username = ${endpoint.auth().username}, password = ${endpoint.auth().password}]")
