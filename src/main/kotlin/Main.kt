@@ -69,9 +69,10 @@ fun main() {
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
         richieste++
         if (richieste > 4) {
-            mqttServer.close()
+            //mqttServer.close()
+            endpoint.close()
             mqttLog.info("Riavviando")
-            mqttServer.listen()
+            //mqttServer.listen()
 
             richieste = 0
         }
