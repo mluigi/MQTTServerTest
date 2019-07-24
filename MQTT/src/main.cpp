@@ -145,6 +145,8 @@ void setup()
   mqttClient.subscribe("return", 1);
 }
 bool randomize = false;
+
+
 void loop()
 {
   if (mqttClient.connected()) //controllo se sono connesso al server
@@ -165,7 +167,7 @@ void loop()
     }
 
     int random_num = randomize ? (rand() % 2000) : 500;
-    Serial.printf("Inviando %d pacchetti con QOS0...", random_num);
+    Serial.printf("Inviando %d pacchetti con QoS = 0...", random_num);
     for (int i = 0; i < random_num; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
@@ -180,7 +182,7 @@ void loop()
 
     start = millis();   //salvo l'istante iniziale
 
-    Serial.printf("Inviando %d pacchetti con QOS1...",random_num);
+    Serial.printf("Inviando %d pacchetti con QoS = 1...",random_num);
     for (int i = 0; i < random_num; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
