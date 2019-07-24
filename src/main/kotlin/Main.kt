@@ -1,7 +1,6 @@
 import Times.time
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
-import io.vertx.mqtt.MqttEndpoint
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -16,7 +15,7 @@ val dbLog: Logger = LoggerFactory.getLogger("DB")
 val mqttLog: Logger = LoggerFactory.getLogger("MQTT")
 
 val db = Database.connect(
-    "jdbc:mariadb://192.168.43.116:3306/test", driver = "org.mariadb.jdbc.Driver",
+    "jdbc:mariadb://localhost:3306/test", driver = "org.mariadb.jdbc.Driver",
     user = "test", password = ""
 )
 
@@ -68,7 +67,6 @@ fun main() {
     val packetsALO = ArrayList<Pair<Int, Long>>()
     val mesToDevIdMap = HashMap<Int, Int>()
     var pubackSent = 0
-    val endpoints = ArrayList<MqttEndpoint>()
     //gestore connessioni al server, cattura dell'evento di connessione
 
     mqttServer.endpointHandler { endpoint ->
