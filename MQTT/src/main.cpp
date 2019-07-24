@@ -153,27 +153,23 @@ void loop()
   if (mqttClient.connected()) //controllo se sono connesso al server
   {
     long start = millis();    //salvo l'istante iniziale
-    int button1State = digitalRead(button1Pin);
-    int button2State = digitalRead(button2Pin);
     bool randomize = false;
 
     Serial.println("Inviando 500 pacchetti con QOS0...");
 
-    if(button1State == HIGH){
+    if(digitalRead(button1Pin) == HIGH){
       randomize = true;
       digitalWrite(led1Pin, HIGH);
       digitalWrite(led2Pin, LOW);
     }
-
-    if(button2State == HIGH){
+    else if(digitalRead(button2Pin) == HIGH){
       randomize = false;
       digitalWrite(led1Pin, LOW);
       digitalWrite(led2Pin, HIGH);
     }
 
-    int random_num = rand();
-
-    for (int i = 0; i < randomize ? (random_num % 5000) : 500; ++i)
+    int random_num = randomize ? (rand() % 2000) : 500;
+    for (int i = 0; i < random_num; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
     }
@@ -188,7 +184,7 @@ void loop()
     start = millis();   //salvo l'istante iniziale
 
     Serial.println("Inviando 500 pacchetti con QOS1...");
-    for (int i = 0; i < randomize ? (random_num % 5000) : 500; ++i)
+    for (int i = 0; i < random_num; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
     }
