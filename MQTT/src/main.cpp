@@ -30,6 +30,7 @@ void connectToMqtt()    //funzione di connessione al server
   Serial.println("Connettendo al server MQTT...");
   mqttClient.setKeepAlive(4);
   mqttClient.setCleanSession(true);
+  mqttClient.disconnect();
   mqttClient.connect();
 }
 
