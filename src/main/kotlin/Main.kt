@@ -86,7 +86,7 @@ fun main() {
                 MqttQoS.AT_MOST_ONCE -> {
                     val curr = System.nanoTime()    //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
-                        if (prev != 0L && curr - prev < 500_000_000) {
+                        if (prev != 0L && curr - prev < 700_000_000) {
                             packetsAMO.add(
                                 Pair(
                                     it.messageId(),
@@ -103,7 +103,7 @@ fun main() {
                     ++pubackSent
                     val curr = System.nanoTime()       //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
-                        if (prev != 0L && curr - prev < 500_000_000) {
+                        if (prev != 0L && curr - prev < 700_000_000) {
                             packetsALO.add(Pair(it.messageId(), curr - prev))       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
                             mesToDevIdMap[it.messageId()] = devId
                         }
