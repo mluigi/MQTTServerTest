@@ -26,6 +26,7 @@ val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())   //creazione serv
 object Devices : Table() {      //creazione tabella dei dispositivi
     val id = integer("id").autoIncrement().primaryKey()
     val name = varchar("name", 50).uniqueIndex()
+    val ip = varchar("ip", 30)
 }
 
 object Times : Table() {    //creo tabella dei tempi
@@ -75,9 +76,10 @@ fun main() {
 
         var devId = 0
         transaction(db) {
-            devId = Devices.insertIgnore {
+            devId = Devices.update(where = { Devices.ip eq endpoint.remoteAddress().host() }) {
                 it[name] = endpoint.clientIdentifier()
-            } get Devices.id
+            }
+            dbLog.info("BUUUUUUU = $devId")
         }
         if (endpoint.auth() != null) {
             mqttLog.info("[username = ${endpoint.auth().username}, password = ${endpoint.auth().password}]")
