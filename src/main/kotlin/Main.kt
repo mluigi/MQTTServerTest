@@ -70,7 +70,7 @@ fun main() {
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
 
-        if (endpoints.map { it.clientIdentifier() }.contains(endpoint.clientIdentifier())) {
+        if (endpoints.any { it.clientIdentifier() == endpoint.clientIdentifier() }) {
             val endpointToRemove = endpoints.first { it.clientIdentifier() == endpoint.clientIdentifier() }
             endpointToRemove.close()
             endpoints.remove(endpointToRemove)
