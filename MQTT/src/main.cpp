@@ -103,10 +103,6 @@ void onMqttPublish(uint16_t packetId)
 {
   returnTime = millis();
   ++pubacks;
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(2000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(2000);
 }
 
 int button1Pin = 32;
@@ -126,8 +122,8 @@ void setup()
   pinMode(led1Pin, OUTPUT);
   pinMode(led2Pin, OUTPUT);
 
-  digitalWrite(led1Pin, HIGH);
-  digitalWrite(led2Pin, LOW);
+  digitalWrite(led2Pin, HIGH);
+  digitalWrite(led1Pin, LOW);
 
   delay(1000);
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(1000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
@@ -148,28 +144,28 @@ void setup()
   connectToWifi();
   mqttClient.subscribe("return", 1);
 }
-
+bool randomize = false;
 void loop()
 {
   if (mqttClient.connected()) //controllo se sono connesso al server
   {
     long start = millis();    //salvo l'istante iniziale
-    bool randomize = false;
-
-    Serial.println("Inviando 500 pacchetti con QOS0...");
-
-    if(digitalRead(button1Pin) == HIGH){
+  
+    if(digitalRead(button2Pin) == HIGH){
       randomize = true;
       digitalWrite(led1Pin, HIGH);
       digitalWrite(led2Pin, LOW);
+      Serial.println("Premuto primo pulsante");
     }
-    else if(digitalRead(button2Pin) == HIGH){
+    else if(digitalRead(button1Pin) == HIGH){
       randomize = false;
       digitalWrite(led1Pin, LOW);
       digitalWrite(led2Pin, HIGH);
+      Serial.println("Premuto secondo pulsante");
     }
 
     int random_num = randomize ? (rand() % 2000) : 500;
+    Serial.printf("Inviando %d pacchetti con QOS0...", random_num);
     for (int i = 0; i < random_num; ++i)
     {
       mqttClient.publish("test", 0, false, "pack");   //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
@@ -184,7 +180,7 @@ void loop()
 
     start = millis();   //salvo l'istante iniziale
 
-    Serial.println("Inviando 500 pacchetti con QOS1...");
+    Serial.printf("Inviando %d pacchetti con QOS1...",random_num);
     for (int i = 0; i < random_num; ++i)
     {
       mqttClient.publish("test", 1, false, "pack");   //invio di un pacchetto QOS1 (con ricezione di acknowledgement)

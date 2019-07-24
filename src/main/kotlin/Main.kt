@@ -62,10 +62,20 @@ fun main() {
     val packetsALO = ArrayList<Pair<Int, Long>>()
     val mesToDevIdMap = HashMap<Int, Int>()
     var pubackSent = 0
+    var richieste = 0
 
     //gestore connessioni al server, cattura dell'evento di connessione
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
+        richieste++
+        if (richieste > 4) {
+            //mqttServer.close()
+            endpoint.close()
+            mqttLog.info("Riavviando")
+            //mqttServer.listen()
+
+            richieste = 0
+        }
         var devId = 0
         transaction(db) {
             devId = Devices.insertIgnore {
