@@ -85,7 +85,7 @@ fun main() {
                     it[ip] = endpoint.remoteAddress().host()
                 } get Devices.id
             } else {
-                dbLog.info("BUUUUUUU = $updateReturn")
+                devId = updateReturn
             }
         }
         if (endpoint.auth() != null) {
