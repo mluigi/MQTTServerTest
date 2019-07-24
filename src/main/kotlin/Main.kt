@@ -1,6 +1,7 @@
 import Times.time
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
+import io.vertx.mqtt.MqttEndpoint
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -44,10 +45,12 @@ object Sessions : Table() {     //creo tabella delle sessioni
 
 fun main() {
     var sesId = 0
-    transaction(db) {       //creazione tabelle database
+    transaction(db) {
+        //creazione tabelle database
         SchemaUtils.drop(Devices, Sessions, Times)      //svuotamento database
         SchemaUtils.create(Devices, Sessions, Times)        //creazione database
-        sesId = Sessions.insert {       //inizializzazione database
+        sesId = Sessions.insert {
+            //inizializzazione database
             it[startDate] = DateTime.now()
             it[QOS0Packets] = 0
             it[QOS1Packets] = 0
@@ -62,20 +65,19 @@ fun main() {
     val packetsALO = ArrayList<Pair<Int, Long>>()
     val mesToDevIdMap = HashMap<Int, Int>()
     var pubackSent = 0
-    var richieste = 0
-
+    val endpoints = ArrayList<MqttEndpoint>()
     //gestore connessioni al server, cattura dell'evento di connessione
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
-        richieste++
-        if (richieste > 4) {
-            //mqttServer.close()
-            endpoint.close()
-            mqttLog.info("Riavviando")
-            //mqttServer.listen()
 
-            richieste = 0
+        if (endpoints.map { it.clientIdentifier() }.contains(endpoint.clientIdentifier())) {
+            val endpointToRemove = endpoints.first { it.clientIdentifier() == endpoint.clientIdentifier() }
+            endpointToRemove.close()
+            endpoints.remove(endpointToRemove)
+        } else {
+            endpoints.add(endpoint)
         }
+
         var devId = 0
         transaction(db) {
             devId = Devices.insertIgnore {
@@ -114,7 +116,12 @@ fun main() {
                     val curr = System.nanoTime()       //salvo l'istante di tempo in cui ho ricevuto il pacchetto
                     synchronized(lock) {
                         if (prev != 0L && curr - prev < 700_000_000) {
-                            packetsALO.add(Pair(it.messageId(), curr - prev))       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
+                            packetsALO.add(
+                                Pair(
+                                    it.messageId(),
+                                    curr - prev
+                                )
+                            )       //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
                             mesToDevIdMap[it.messageId()] = devId
                         }
                     }
@@ -135,7 +142,8 @@ fun main() {
         }.accept(true)      //accetta connessione
     }.exceptionHandler {
         mqttLog.info("${it.cause}: ${it.message}")
-    }.listen { ar ->        //mette in ascolto il server
+    }.listen { ar ->
+        //mette in ascolto il server
         if (ar.succeeded()) {
             mqttLog.info("Il server MQTT è in ascolto sul porto ${ar.result().actualPort()}.")
         } else {
@@ -163,7 +171,8 @@ fun main() {
                         this[Times.sessionId] = sesId
                         this[Times.deviceId] = devId!!
                     }
-                    Sessions.update(where = { Sessions.id eq sesId }) {     //aggiorno la riga della sessione
+                    Sessions.update(where = { Sessions.id eq sesId }) {
+                        //aggiorno la riga della sessione
                         with(SqlExpressionBuilder) {
                             it.update(QOS0Packets, QOS0Packets + packetsAMO.size)
                             it.update(QOS1Packets, QOS1Packets + packetsALO.size)
