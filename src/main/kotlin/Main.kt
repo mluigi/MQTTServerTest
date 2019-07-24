@@ -16,9 +16,10 @@ val dbLog: Logger = LoggerFactory.getLogger("DB")
 val mqttLog: Logger = LoggerFactory.getLogger("MQTT")
 
 val db = Database.connect(
-    "jdbc:mariadb://localhost:3306/test", driver = "org.mariadb.jdbc.Driver",
+    "jdbc:mariadb://192.168.43.116:3306/test", driver = "org.mariadb.jdbc.Driver",
     user = "test", password = ""
 )
+
 
 val mqttServer: MqttServer = MqttServer.create(Vertx.vertx())   //creazione server MQTT
 
@@ -44,6 +45,7 @@ object Sessions : Table() {     //creo tabella delle sessioni
 
 
 fun main() {
+
     var sesId = 0
     transaction(db) {
         //creazione tabelle database
@@ -67,16 +69,9 @@ fun main() {
     var pubackSent = 0
     val endpoints = ArrayList<MqttEndpoint>()
     //gestore connessioni al server, cattura dell'evento di connessione
+
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
-
-        if (endpoints.any { it.clientIdentifier() == endpoint.clientIdentifier() }) {
-            val endpointToRemove = endpoints.first { it.clientIdentifier() == endpoint.clientIdentifier() }
-            endpointToRemove.close()
-            endpoints.remove(endpointToRemove)
-        } else {
-            endpoints.add(endpoint)
-        }
 
         var devId = 0
         transaction(db) {
