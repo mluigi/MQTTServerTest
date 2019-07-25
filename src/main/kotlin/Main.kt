@@ -73,7 +73,10 @@ fun main() {
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
 
         var devId = 0
-        transaction(db) {
+        transaction(db) {       
+        //per evitare conflitti nella riconnessione dei device, 
+        //li distinguiamo per ip e non per id, 
+        //che per uno stesso devices risulta diverso ad ogni riconnessione
             if (Devices.update(where = { Devices.ip eq endpoint.remoteAddress().host() }) {
                     it[name] = endpoint.clientIdentifier()
                 } == 0) {
