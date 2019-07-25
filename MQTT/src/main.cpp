@@ -9,10 +9,10 @@ extern "C"
 #include "freertos/timers.h"
 }
 
-#define WIFI_SSID "OnePlus6"
-#define WIFI_PASSWORD "test1234"
+#define WIFI_SSID "FASTWEB-tsT92f"
+#define WIFI_PASSWORD "meloncello10"
 
-#define MQTT_HOST IPAddress(192, 168, 43, 116)
+#define MQTT_HOST IPAddress(192, 168, 1, 70)
 #define MQTT_PORT 1883
 
 AsyncMqttClient mqttClient;
@@ -148,6 +148,7 @@ void setup()
 }
 
 bool randomize = false;
+bool running = true;
 char buf[128];
 void loop()
 {
@@ -155,21 +156,47 @@ void loop()
   {
     long start = millis(); //salvo l'istante iniziale
 
-    if (digitalRead(button2Pin) == HIGH)
+    if (digitalRead(button1Pin) == HIGH)
     {
-      randomize = true;
-      digitalWrite(led1Pin, HIGH);
-      digitalWrite(led2Pin, LOW);
+      randomize = !randomize;
+      if (randomize)
+      {
+        digitalWrite(led1Pin, HIGH);
+        digitalWrite(led2Pin, LOW);
+      }
+      else
+      {
+        digitalWrite(led1Pin, LOW);
+        digitalWrite(led2Pin, HIGH);
+      }
+
       Serial.println("Premuto primo pulsante");
     }
-    else if (digitalRead(button1Pin) == HIGH)
+    else if (digitalRead(button2Pin) == HIGH)
     {
-      randomize = false;
-      digitalWrite(led1Pin, LOW);
-      digitalWrite(led2Pin, HIGH);
+      running = !running;
+      if (running)
+      {
+        if (randomize)
+        {
+          digitalWrite(led1Pin, HIGH);
+        }
+        else
+        {
+          digitalWrite(led2Pin, HIGH);
+        }
+      }
+      else
+      {
+        digitalWrite(led1Pin, LOW);
+        digitalWrite(led2Pin, LOW);
+        delay(1000);
+      }
+
       Serial.println("Premuto secondo pulsante");
     }
 
+if(running){
     int random_num = randomize ? (rand() % 2000) : 500;
     Serial.printf("Inviando %d pacchetti con QoS = 0...", random_num);
     for (int i = 0; i < random_num; ++i)
@@ -202,5 +229,6 @@ void loop()
     delay(1000);
 
     Serial.printf("Totale messaggi mandati: QOS0 %d, QOS1 %d, Totale Puback ricevuti %d\n", totQOS0, totQOS1, pubacks);
+  }
   }
 }

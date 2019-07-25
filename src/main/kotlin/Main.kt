@@ -129,7 +129,7 @@ fun main() {
                     devIdToDataReceived[devId] = Triple(data[0], data[1], data[2])
                 }
             } catch (e: Exception) {
-                mqttLog.error(e.message)
+                //mqttLog.error(e.message)
             }
 
         }.publishReleaseHandler {

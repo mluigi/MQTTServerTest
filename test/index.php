@@ -99,21 +99,21 @@
                         label: "Differenza pacchetti QOS0 mandati e ricevuti",
                         data: [],
                         borderWidth: 1,
-                        backgroundColor: 'rgb(155, 155, 155)',
+                        backgroundColor: 'rgba(155,155,155,0)',
                         borderColor: 'rgb(255,0,64)'
                     },
                     {
                         label: "Differenza pacchetti QOS1 mandati e ricevuti",
                         data: [],
                         borderWidth: 1,
-                        backgroundColor: 'rgb(155, 155, 155)',
+                        backgroundColor: 'rgba(155,155,155,0)',
                         borderColor: 'rgb(167,236,255)'
                     },
                     {
                         label: "Differenza puback mandati e ricevuti",
                         data: [],
                         borderWidth: 1,
-                        backgroundColor: 'rgb(155, 155, 155)',
+                        backgroundColor: 'rgba(155,155,155,0)',
                         borderColor: 'rgb(231,49,255)'
                     },
                 ]
@@ -139,7 +139,7 @@
                         label: "Tempi tra gli ultimi 500 pacchetti (in ns) - Client 2",
                         data: [],
                         borderWidth: 1,
-                        backgroundColor: 'rgb(155, 155, 155)',
+                        backgroundColor: 'rgba(155,155,155,0)',
                         borderColor: 'rgb(179,255,0)'
                     },
                 ]
@@ -200,12 +200,9 @@
 
                     let idArray = data[2].map(Number);      //prendo la terza colonna del database
 
-                    let a = dati["QOS0PacketsSent"] - dati["QOS0PacketsReceived"];
-                    diffQoS0.push(a < 499 ? a : diffQoS0[diffQoS0.length - 1]);
-                    a = dati["QOS1PacketsSent"] - dati["QOS1PacketsReceived"];
-                    diffQoS1.push(a < 499 ? a : diffQoS1[diffQoS1.length - 1]);
-                    a = dati["pubackSent"] - dati["pubackReceived"];
-                    diffPub.push(a < 499 ? a : diffPub[diffPub.length - 1]);
+                    diffQoS0.push(dati["QOS0PacketsSent"] - dati["QOS0PacketsReceived"]);
+                    diffQoS1.push(dati["QOS1PacketsSent"] - dati["QOS1PacketsReceived"]);
+                    diffPub.push(dati["pubackSent"] - dati["pubackReceived"]);
 
                     let indexesLossArray = [];        //dichiaro un vettore di indici
                     for (let key of diffQoS1.keys()) {
