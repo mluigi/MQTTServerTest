@@ -26,15 +26,25 @@ foreach ($array as $item) {
 }
 $result->free();
 
-$sql = "SELECT * FROM Sessions ORDER BY id DESC LIMIT 1";
+$sql = "SELECT sum(QOS0PacketsReceived) as QOS0PacketsReceived, sum(QOS1PacketsReceived) as QOS1PacketsReceived, sum(pubackSent) as pubackSent,
+        sum(QOS0PacketsSent) as QOS0PacketsSent, sum(QOS1PacketsSent) as QOS1PacketsSent, sum(pubackReceived) as pubackReceived
+        FROM Devices ORDER BY id DESC LIMIT 1";
 $result=$conn->query($sql);
-$data = $result->fetch_all(MYSQLI_ASSOC);
+$sessionData = $result->fetch_all(MYSQLI_ASSOC);
+
+$result->free();
+
+$sql = "SELECT id,sum(QOS0PacketsSent) as totQOS0Sent, sum(QOS1PacketsSent) as totQOS1Sent, sum(pubackReceived) as 
+    totPubACKReceived from test.Devices group by Devices.ip order by id desc LIMIT 2";
+$result=$conn->query($sql);
+$devicesData = $result->fetch_all(MYSQLI_ASSOC);
 
 $conn->close();
 
 echo json_encode(array(
-    $data[0],
+    $sessionData[0],
     $timesarray,
     $idarray,
-    $devIdarray
+    $devIdarray,
+    $devicesData
 ));
