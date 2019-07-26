@@ -1,6 +1,8 @@
 import Times.time
 import io.netty.handler.codec.mqtt.MqttQoS
 import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
+import io.vertx.mqtt.MqttEndpoint
 import io.vertx.mqtt.MqttServer
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -58,10 +60,11 @@ fun main() {
     //Dati ricevuti dai dispositivi
     val devIdToDataReceived = HashMap<Int, Triple<Int, Int, Int>>()
 
+    val endpoints = ArrayList<MqttEndpoint>()
     //gestore connessioni al server, cattura dell'evento di connessione
     mqttServer.endpointHandler { endpoint ->
         mqttLog.info("MQTT client [${endpoint.clientIdentifier()}] richiesta di connessione, clean session = ${endpoint.isCleanSession}")
-
+        endpoints.add(endpoint)
         var devId = 0
         transaction(db) {
             devId = Devices.insert {
@@ -91,11 +94,11 @@ fun main() {
                     synchronized(lock) {
                         //if (prev != 0L && curr - prev < 700_000_000) {
                         devIdToTimesAMO[devId]!!.add(
-                                Pair(
-                                    it.messageId(),
-                                    curr - prev
-                                )
-                            ) //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
+                            Pair(
+                                it.messageId(),
+                                curr - prev
+                            )
+                        ) //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
                         mesIdToDevIdMap[it.messageId()] = devId
                         //}
                     }
@@ -108,10 +111,10 @@ fun main() {
                         //if (prev != 0L && curr - prev < 700_000_000) {
                         devIdToPuback[devId] = devIdToPuback[devId]!! + 1
                         devIdToTimesALO[devId]!!.add(
-                                Pair(
-                                    it.messageId(),
-                                    curr - prev
-                                )
+                            Pair(
+                                it.messageId(),
+                                curr - prev
+                            )
                         ) //aggiungo [idMessaggio, differenza tra t(mess corrente) e t(mess precedente)] all'array
                         mesIdToDevIdMap[it.messageId()] = devId
                         //}
@@ -150,8 +153,26 @@ fun main() {
             ar.cause().printStackTrace()
         }
     }
+    //var update = false
     Timer().scheduleAtFixedRate(0, 1000) {
         synchronized(lock) {
+           /* mqttLog.info("$update")
+            if (update) {
+                transaction(db) {
+                    mqttLog.info("Check for reset...")
+                    val reset = Devices.select {
+                        Devices.QOS0PacketsReceived eq 0
+                    }.count() > 0
+                    if (reset) {
+                        mqttLog.info("Resetting...")
+                        endpoints.forEach {
+                            it.publish("return", Buffer.buffer("reset"), MqttQoS.AT_LEAST_ONCE, false, false)
+                        }
+                        update = false
+                    }
+                }
+            }*/
+
             var amoSize = 0
             devIdToTimesAMO.keys.forEach {
                 amoSize += devIdToTimesAMO[it]!!.size
@@ -216,6 +237,7 @@ fun main() {
                             }
                         }
                     }
+
                 }
                 //azzero i dati temporanei
                 devIdToPuback.keys.forEach {
@@ -227,6 +249,7 @@ fun main() {
                 devIdToTimesAMO.keys.forEach {
                     devIdToTimesAMO[it]!!.clear()
                 }
+                //update = true
             }
         }
     }

@@ -9,10 +9,10 @@ extern "C"
 #include "freertos/timers.h"
 }
 
-#define WIFI_SSID "FASTWEB-tsT92f"
-#define WIFI_PASSWORD "meloncello10"
+#define WIFI_SSID "OnePlus6"
+#define WIFI_PASSWORD "test1234"
 
-#define MQTT_HOST IPAddress(192, 168, 1, 70)
+#define MQTT_HOST IPAddress(192, 168, 43, 116)
 #define MQTT_PORT 1883
 
 AsyncMqttClient mqttClient;
@@ -99,7 +99,7 @@ void onMqttUnsubscribe(uint16_t packetId) //funzione di gestione disaccreditamen
 
 void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
-  Serial.println("Publish ricevuto.");
+  Serial.println("Messaggio di reset ricevuto");
 }
 
 void onMqttPublish(uint16_t packetId)
@@ -118,7 +118,6 @@ void setup()
   Serial.begin(115200);
   Serial.println();
   Serial.println();
-  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(button1Pin, INPUT);
   pinMode(button2Pin, INPUT);
   pinMode(led1Pin, OUTPUT);
@@ -190,45 +189,45 @@ void loop()
       {
         digitalWrite(led1Pin, LOW);
         digitalWrite(led2Pin, LOW);
-        delay(1000);
       }
 
       Serial.println("Premuto secondo pulsante");
     }
 
-if(running){
-    int random_num = randomize ? (rand() % 2000) : 500;
-    Serial.printf("Inviando %d pacchetti con QoS = 0...", random_num);
-    for (int i = 0; i < random_num; ++i)
+    if (running)
     {
-      totQOS0++;
-      snprintf(buf, sizeof(buf), "%d,%d,%d", totQOS0, totQOS1, pubacks);
-      //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
-      //con all'interno il totale dei messaggi mandati così che il server possa fare il confronto
-      //tra i messaggi mandati e quelli effettivamente ricevuti
-      mqttClient.publish("test", 0, false, buf);
+      int random_num = randomize ? (rand() % 2000) : 500;
+      Serial.printf("Inviando %d pacchetti con QoS = 0...", random_num);
+      for (int i = 0; i < random_num; ++i)
+      {
+        totQOS0++;
+        snprintf(buf, sizeof(buf), "%d,%d,%d", totQOS0, totQOS1, pubacks);
+        //invio di un pacchetto QOS0 (senza ricezione di acknowledgement) di test
+        //con all'interno il totale dei messaggi mandati così che il server possa fare il confronto
+        //tra i messaggi mandati e quelli effettivamente ricevuti
+        mqttClient.publish("test", 0, false, buf);
+      }
+      long end = millis(); //salvo l'istante finale
+
+      Serial.printf("Tempo impiegato %ld ms\n", (end - start));
+      delay(1000);
+
+      start = millis(); //salvo l'istante iniziale
+
+      Serial.printf("Inviando %d pacchetti con QoS = 1...", random_num);
+      for (int i = 0; i < random_num; ++i)
+      {
+        totQOS1++;
+        snprintf(buf, sizeof(buf), "%d,%d,%d", totQOS0, totQOS1, pubacks);
+        mqttClient.publish("test", 1, false, buf); //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
+      }
+
+      end = millis(); //salvo l'istante finale
+
+      Serial.printf("Tempo impiegato %ld ms\n", (end - start));
+      delay(1000);
+
+      Serial.printf("Totale messaggi mandati: QOS0 %d, QOS1 %d, Totale Puback ricevuti %d\n", totQOS0, totQOS1, pubacks);
     }
-    long end = millis(); //salvo l'istante finale
-
-    Serial.printf("Tempo impiegato %ld ms\n", (end - start));
-    delay(1000);
-
-    start = millis(); //salvo l'istante iniziale
-
-    Serial.printf("Inviando %d pacchetti con QoS = 1...", random_num);
-    for (int i = 0; i < random_num; ++i)
-    {
-      totQOS1++;
-      snprintf(buf, sizeof(buf), "%d,%d,%d", totQOS0, totQOS1, pubacks);
-      mqttClient.publish("test", 1, false, buf); //invio di un pacchetto QOS1 (con ricezione di acknowledgement)
-    }
-
-    end = millis(); //salvo l'istante finale
-
-    Serial.printf("Tempo impiegato %ld ms\n", (end - start));
-    delay(1000);
-
-    Serial.printf("Totale messaggi mandati: QOS0 %d, QOS1 %d, Totale Puback ricevuti %d\n", totQOS0, totQOS1, pubacks);
-  }
   }
 }

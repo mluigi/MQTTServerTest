@@ -40,7 +40,7 @@
         <h1 class="title">Media</h1>
         <p class="description media">0</p>
     </div>
-    <a class="btn cubered-flat cancelButton">Reset</a>
+   <!-- <a class="btn cubered-flat cancelButton">Reset</a>-->
 </section>
 
 <section class="card-container" style="margin: auto; height:75vh; width:90vw">
@@ -199,10 +199,12 @@
                     $(".puback").text(dati["pubackSent"]);
 
                     let idArray = data[2].map(Number);      //prendo la terza colonna del database
-
-                    diffQoS0.push(dati["QOS0PacketsSent"] - dati["QOS0PacketsReceived"]);
-                    diffQoS1.push(dati["QOS1PacketsSent"] - dati["QOS1PacketsReceived"]);
-                    diffPub.push(dati["pubackSent"] - dati["pubackReceived"]);
+		    let a = dati["QOS0PacketsSent"] - dati["QOS0PacketsReceived"];
+		    diffQoS0.push(a>0?a:0);
+		    a=dati["QOS1PacketsSent"] - dati["QOS1PacketsReceived"];
+		    diffQoS1.push(a>0?a:0);
+		    a=dati["pubackSent"] - dati["pubackReceived"];
+                    diffPub.push(a>0?a:0);
 
                     let indexesLossArray = [];        //dichiaro un vettore di indici
                     for (let key of diffQoS1.keys()) {
